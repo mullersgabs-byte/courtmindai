@@ -66,8 +66,9 @@
   --cream: oklch(0.975 0.012 85);          /* warm off-white background */
   --warm: oklch(0.945 0.018 85);           /* slightly deeper beige */
   --ink: oklch(0.18 0.01 90);              /* soft black */
-  --lime: oklch(0.88 0.18 130);            /* signature lime accent */
-  --lime-soft: oklch(0.94 0.10 130);
+  --lime: oklch(0.86 0.16 128);            /* signature lime accent */
+  --lime-soft: oklch(0.94 0.08 128);
+  --stone: oklch(0.86 0.015 85);
 
   --background: var(--cream);
   --foreground: var(--ink);
