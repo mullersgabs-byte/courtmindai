@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as ExerciseRouteImport } from './routes/exercise'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalyzeRouteImport } from './routes/analyze'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExerciseRoute = ExerciseRouteImport.update({
+  id: '/exercise',
+  path: '/exercise',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
+  '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
+  '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
 }
@@ -60,21 +68,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
+  '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analyze' | '/dashboard' | '/home' | '/onboarding'
+  fullPaths:
+    | '/'
+    | '/analyze'
+    | '/dashboard'
+    | '/exercise'
+    | '/home'
+    | '/onboarding'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analyze' | '/dashboard' | '/home' | '/onboarding'
-  id: '__root__' | '/' | '/analyze' | '/dashboard' | '/home' | '/onboarding'
+  to: '/' | '/analyze' | '/dashboard' | '/exercise' | '/home' | '/onboarding'
+  id:
+    | '__root__'
+    | '/'
+    | '/analyze'
+    | '/dashboard'
+    | '/exercise'
+    | '/home'
+    | '/onboarding'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyzeRoute: typeof AnalyzeRoute
   DashboardRoute: typeof DashboardRoute
+  ExerciseRoute: typeof ExerciseRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
 }
@@ -93,6 +116,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercise': {
+      id: '/exercise'
+      path: '/exercise'
+      fullPath: '/exercise'
+      preLoaderRoute: typeof ExerciseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -123,6 +153,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyzeRoute: AnalyzeRoute,
   DashboardRoute: DashboardRoute,
+  ExerciseRoute: ExerciseRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
 }
