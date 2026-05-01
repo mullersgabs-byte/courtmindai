@@ -385,7 +385,15 @@ function Tabs({
 }
 
 /* ---------- Session row ---------- */
-function SessionRow({ session }: { session: Session }) {
+function SessionRow({
+  session,
+  onComplete,
+  onUndo,
+}: {
+  session: Session;
+  onComplete: () => void;
+  onUndo: () => void;
+}) {
   const intensityColor =
     session.intensity === "High" ? "text-danger" :
     session.intensity === "Medium" ? "text-warn" : "text-success";
@@ -433,19 +441,31 @@ function SessionRow({ session }: { session: Session }) {
       {/* action */}
       <div className="col-span-12 sm:col-span-1 flex justify-end">
         {session.status === "done" ? (
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-success/15 text-success">
-            <Check className="h-4 w-4" />
-          </span>
+          <button
+            type="button"
+            onClick={onUndo}
+            aria-label="Mark as not done"
+            title="Undo completion"
+            className="group/undo grid h-10 w-10 place-items-center rounded-full bg-success/15 text-success transition hover:bg-foreground/10 hover:text-foreground"
+          >
+            <Check className="h-4 w-4 group-hover/undo:hidden" />
+            <Undo2 className="hidden h-4 w-4 group-hover/undo:block" />
+          </button>
         ) : (
           <button
+            type="button"
+            onClick={onComplete}
+            aria-label="Mark session as done"
+            title="Mark as done"
             className={[
-              "grid h-10 w-10 place-items-center rounded-full transition",
+              "group/play grid h-10 w-10 place-items-center rounded-full transition",
               session.status === "today"
                 ? "bg-court text-ink glow-court animate-pulse-court"
-                : "border hairline text-foreground hover:bg-court hover:text-ink hover:border-court",
+                : "border hairline text-foreground hover:bg-foreground hover:text-background hover:border-foreground",
             ].join(" ")}
           >
-            <Play className="h-4 w-4 fill-current" />
+            <Play className="h-4 w-4 fill-current group-hover/play:hidden" />
+            <Check className="hidden h-4 w-4 group-hover/play:block" />
           </button>
         )}
       </div>
