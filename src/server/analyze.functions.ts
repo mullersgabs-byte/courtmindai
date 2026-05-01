@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const InputSchema = z.object({
   mode: z.enum(["text", "image"]),
@@ -114,3 +115,292 @@ Be focused, professional, encouraging. Body marker (x,y) are percentages on a fr
       return { ok: false, error: "Unexpected error during analysis." };
     }
   });
+
+/* ============================================================
+ * VIDEO ANALYSIS — uploads + Gemini multimodal
+ * ============================================================ */
+
+const VideoInputSchema = z.object({
+  videoPath: z.string().min(1).max(500),    // path inside the training-videos bucket
+  sport: z.string().max(40).optional(),
+  level: z.string().max(40).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export type VideoEvent = {
+  time_seconds: number;
+  type: "good" | "warn" | "bad";
+  title: string;
+  detail: string;
+  body_part?: string;
+};
+
+export type VideoAnalysis = {
+  id: string;
+  status: "done" | "error";
+  videoUrl: string;
+  overallScore: number;
+  verdict: string;
+  events: VideoEvent[];
+  error?: string;
+};
+
+const VIDEO_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "submit_video_analysis",
+    description:
+      "Return precise athletic feedback for the uploaded training video, including timestamped moments where the athlete performed well or made mistakes.",
+    parameters: {
+      type: "object",
+      properties: {
+        overall_score: {
+          type: "number", minimum: 0, maximum: 10,
+          description: "Overall technical score from 0 to 10 (one decimal).",
+        },
+        verdict: {
+          type: "string",
+          description: "One short sentence summarising the session (max 90 chars).",
+        },
+        events: {
+          type: "array", minItems: 4, maxItems: 10,
+          description:
+            "Key moments in the video, ordered by time. Use a mix of 'good' (correct execution), 'warn' (room to improve) and 'bad' (clear mistake). Each event MUST be at a distinct timestamp inside the actual video duration.",
+          items: {
+            type: "object",
+            properties: {
+              time_seconds: {
+                type: "number", minimum: 0,
+                description: "Timestamp in seconds where this moment is visible.",
+              },
+              type: { type: "string", enum: ["good", "warn", "bad"] },
+              title: {
+                type: "string",
+                description: "Short label (max 60 chars), e.g. 'Hip rotation opens early'.",
+              },
+              detail: {
+                type: "string",
+                description:
+                  "One concise coaching sentence explaining what happens and why it matters (max 200 chars).",
+              },
+              body_part: {
+                type: "string",
+                description: "Main body region involved, e.g. 'right knee', 'hips', 'shoulders'.",
+              },
+            },
+            required: ["time_seconds", "type", "title", "detail"],
+          },
+        },
+      },
+      required: ["overall_score", "verdict", "events"],
+    },
+  },
+};
+
+export const analyzeVideo = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => VideoInputSchema.parse(d))
+  .handler(
+    async ({ data }): Promise<VideoAnalysis> => {
+      const apiKey = process.env.LOVABLE_API_KEY;
+
+      // Build a public URL for the uploaded video so the model can fetch it.
+      const { data: pub } = supabaseAdmin.storage
+        .from("training-videos")
+        .getPublicUrl(data.videoPath);
+      const videoUrl = pub.publicUrl;
+
+      // Create the analysis row right away so we can return its id and let
+      // the UI poll / display while the model runs.
+      const { data: row, error: insertErr } = await supabaseAdmin
+        .from("analyses")
+        .insert({
+          video_path: data.videoPath,
+          video_url: videoUrl,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+
+      if (insertErr || !row) {
+        console.error("analyses insert:", insertErr);
+        return {
+          id: "",
+          status: "error",
+          videoUrl,
+          overallScore: 0,
+          verdict: "",
+          events: [],
+          error: "Could not start the analysis.",
+        };
+      }
+
+      if (!apiKey) {
+        await supabaseAdmin
+          .from("analyses")
+          .update({ status: "error", error: "AI service is not configured." })
+          .eq("id", row.id);
+        return {
+          id: row.id,
+          status: "error",
+          videoUrl,
+          overallScore: 0,
+          verdict: "",
+          events: [],
+          error: "AI service is not configured.",
+        };
+      }
+
+      const sport = data.sport ?? "general athletics";
+      const level = data.level ?? "intermediate";
+
+      const system = `You are CourtMind Elite — a calm, precise, world-class sports performance coach.
+You are reviewing a real training video of an athlete practising ${sport} (level: ${level}).
+
+Your job:
+1. Watch the video carefully.
+2. Identify 4 to 8 KEY MOMENTS that are visually decisive — points where the athlete clearly does something well, something to refine, or something wrong.
+3. For each moment, pick a SPECIFIC TIMESTAMP IN SECONDS that occurs INSIDE the video (do not invent times beyond its duration).
+4. Write feedback that is concrete, technical and actionable. Reference the body part involved.
+5. Mix the categories: at least one 'good', one 'warn', one 'bad' if the footage allows.
+6. Be honest. If the form is great overall, give a high score; if it is poor, score low.
+
+Use the submit_video_analysis tool to return your answer. Do not write any other text.`;
+
+      const userText =
+        (data.notes && data.notes.trim().length > 0
+          ? `Athlete note: "${data.notes.trim()}".\n\n`
+          : "") +
+        "Analyse the attached training video and return the structured feedback.";
+
+      try {
+        const res = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              // Pro handles video best in the Gemini family.
+              model: "google/gemini-2.5-pro",
+              messages: [
+                { role: "system", content: system },
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: userText },
+                    // Gemini accepts video via file_url / image_url with a public URL.
+                    { type: "image_url", image_url: { url: videoUrl } },
+                  ],
+                },
+              ],
+              tools: [VIDEO_TOOL],
+              tool_choice: {
+                type: "function",
+                function: { name: "submit_video_analysis" },
+              },
+            }),
+          },
+        );
+
+        if (!res.ok) {
+          const txt = await res.text();
+          console.error("AI gateway video:", res.status, txt);
+          const msg =
+            res.status === 429
+              ? "Too many requests. Please try again in a moment."
+              : res.status === 402
+                ? "AI credits required. Add credits in workspace settings."
+                : "The AI could not analyse this video. Please try a shorter clip.";
+          await supabaseAdmin
+            .from("analyses")
+            .update({ status: "error", error: msg })
+            .eq("id", row.id);
+          return {
+            id: row.id,
+            status: "error",
+            videoUrl,
+            overallScore: 0,
+            verdict: "",
+            events: [],
+            error: msg,
+          };
+        }
+
+        const json = await res.json();
+        const call = json.choices?.[0]?.message?.tool_calls?.[0];
+        if (!call?.function?.arguments) {
+          await supabaseAdmin
+            .from("analyses")
+            .update({ status: "error", error: "No analysis returned." })
+            .eq("id", row.id);
+          return {
+            id: row.id,
+            status: "error",
+            videoUrl,
+            overallScore: 0,
+            verdict: "",
+            events: [],
+            error: "No analysis returned.",
+          };
+        }
+
+        const parsed = JSON.parse(call.function.arguments) as {
+          overall_score: number;
+          verdict: string;
+          events: VideoEvent[];
+        };
+
+        // Sort events chronologically and clamp.
+        const events = (parsed.events ?? [])
+          .filter((e) => Number.isFinite(e.time_seconds) && e.time_seconds >= 0)
+          .map((e) => ({
+            ...e,
+            time_seconds: Math.max(0, Number(e.time_seconds)),
+          }))
+          .sort((a, b) => a.time_seconds - b.time_seconds);
+
+        const overallScore = Math.max(
+          0,
+          Math.min(10, Number(parsed.overall_score) || 0),
+        );
+        const verdict = String(parsed.verdict || "").slice(0, 140);
+
+        await supabaseAdmin
+          .from("analyses")
+          .update({
+            status: "done",
+            overall_score: overallScore,
+            verdict,
+            events,
+            raw: parsed,
+          })
+          .eq("id", row.id);
+
+        return {
+          id: row.id,
+          status: "done",
+          videoUrl,
+          overallScore,
+          verdict,
+          events,
+        };
+      } catch (e) {
+        console.error("analyzeVideo error:", e);
+        await supabaseAdmin
+          .from("analyses")
+          .update({ status: "error", error: "Unexpected error during analysis." })
+          .eq("id", row.id);
+        return {
+          id: row.id,
+          status: "error",
+          videoUrl,
+          overallScore: 0,
+          verdict: "",
+          events: [],
+          error: "Unexpected error during analysis.",
+        };
+      }
+    },
+  );
