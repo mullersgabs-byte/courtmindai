@@ -1,217 +1,266 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles, Target, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Begin — CourtMind" }] }),
-  component: Onboarding,
+  head: () => ({
+    meta: [
+      { title: "Onboarding — CourtMind Elite" },
+      { name: "description", content: "Set up your athletic profile in under a minute." },
+    ],
+  }),
+  component: OnboardingPage,
 });
 
-const sports = ["Tennis", "Strength", "Running", "Pilates", "Yoga", "Soccer"];
-const levels = [
-  { k: "Beginner", d: "Building a base." },
-  { k: "Intermediate", d: "Training with intent." },
-  { k: "Advanced", d: "Refining the details." },
+const SPORTS = ["Tennis", "Running", "Strength", "Football", "Pilates", "Swimming", "Cycling", "Climbing"];
+const LEVELS: Array<{ id: "beginner"|"intermediate"|"advanced"; label: string; sub: string; detail: string }> = [
+  { id: "beginner",     label: "Beginner",     sub: "Building the base",  detail: "New to structured training. We'll start gently and grow your capacity week by week." },
+  { id: "intermediate", label: "Intermediate", sub: "Refining your form", detail: "You train consistently. We'll sharpen technique, balance load, and close specific gaps." },
+  { id: "advanced",     label: "Advanced",     sub: "Chasing peak",       detail: "You've built a strong base. We'll push intensity, periodisation and fine biomechanics." },
 ];
-const frequencies = ["2", "3", "4", "5", "6"];
-const goals = [
-  { k: "Performance", d: "Compete with intention." },
-  { k: "Aesthetics", d: "Look as composed as you train." },
-  { k: "Health", d: "A long, steady practice." },
-];
+const GOALS = ["Improve technique", "Get stronger", "Lose body fat", "Compete", "Stay consistent", "Recover from injury"];
 
-function Onboarding() {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState({ sport: "", level: "", frequency: "", goal: "" });
+type Profile = {
+  sport: string;
+  level: "beginner" | "intermediate" | "advanced" | null;
+  goal: string;
+};
+
+function OnboardingPage() {
   const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [profile, setProfile] = useState<Profile>({ sport: "Tennis", level: null, goal: "" });
 
-  const steps = [
-    { key: "sport", label: "Discipline", question: "What do you train?" },
-    { key: "level", label: "Level", question: "Where are you now?" },
-    { key: "frequency", label: "Cadence", question: "How often, per week?" },
-    { key: "goal", label: "Intent", question: "What are you working toward?" },
-  ] as const;
-
-  const current = steps[step];
-  const value = data[current.key];
-  const canContinue = !!value;
+  const total = 3;
+  const canNext =
+    (step === 0 && !!profile.sport) ||
+    (step === 1 && !!profile.level) ||
+    (step === 2 && !!profile.goal);
 
   const next = () => {
-    if (step < steps.length - 1) setStep(step + 1);
-    else navigate({ to: "/dashboard" });
+    if (!canNext) return;
+    if (step < total - 1) {
+      setStep(step + 1);
+      return;
+    }
+    try {
+      localStorage.setItem("courtmind.profile", JSON.stringify(profile));
+    } catch {}
+    navigate({ to: "/plan" });
+  };
+
+  const back = () => {
+    if (step > 0) setStep(step - 1);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
-      {/* Top bar */}
-      <header className="border-b hairline">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-8 py-5">
-          <Link to="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-            <span className="block h-2 w-2 rounded-full bg-foreground" />
-            CourtMind
+    <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
+      <header className="sticky top-0 z-40 glass border-b hairline">
+        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
+          <Link to="/" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Exit
           </Link>
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-            Assessment · {String(step + 1).padStart(2, "0")} / {String(steps.length).padStart(2, "0")}
+          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
+            Step {step + 1} <span className="text-foreground/30">/ {total}</span>
           </p>
-          <Link to="/" className="text-[13px] text-muted-foreground transition hover:text-foreground">
-            Save & exit
-          </Link>
+          <div className="w-12" />
         </div>
-        {/* Progress hairline */}
-        <div className="h-px w-full bg-foreground/5">
-          <div
-            className="h-px bg-foreground transition-all duration-700 ease-out"
-            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
-          />
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="mx-auto max-w-[1100px] px-8 py-16 md:py-24">
-        <div key={step} className="animate-float-up">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-            {current.label}
-          </p>
-          <h1 className="mt-6 text-balance text-[clamp(2.4rem,5vw,4.5rem)] font-medium leading-[1] tracking-[-0.04em]">
-            {current.question.split(" ").slice(0, -1).join(" ")}{" "}
-            <span className="font-serif italic font-normal">{current.question.split(" ").slice(-1)}</span>
-          </h1>
-
-          <div className="mt-16">
-            {current.key === "sport" && (
-              <div className="grid grid-cols-2 gap-px bg-foreground/10 sm:grid-cols-3">
-                {sports.map((s) => (
-                  <Choice key={s} active={data.sport === s} onClick={() => setData({ ...data, sport: s })} large>
-                    {s}
-                  </Choice>
-                ))}
-              </div>
-            )}
-
-            {current.key === "level" && (
-              <div className="grid gap-px bg-foreground/10 md:grid-cols-3">
-                {levels.map((l) => (
-                  <Choice
-                    key={l.k}
-                    active={data.level === l.k}
-                    onClick={() => setData({ ...data, level: l.k })}
-                    description={l.d}
-                  >
-                    {l.k}
-                  </Choice>
-                ))}
-              </div>
-            )}
-
-            {current.key === "frequency" && (
-              <div className="grid grid-cols-5 gap-px bg-foreground/10">
-                {frequencies.map((f) => (
-                  <Choice
-                    key={f}
-                    active={data.frequency === f}
-                    onClick={() => setData({ ...data, frequency: f })}
-                    centered
-                  >
-                    <span className="block text-5xl font-medium tracking-tight">{f}</span>
-                    <span className="mt-2 block text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                      per week
-                    </span>
-                  </Choice>
-                ))}
-              </div>
-            )}
-
-            {current.key === "goal" && (
-              <div className="grid gap-px bg-foreground/10 md:grid-cols-3">
-                {goals.map((g) => (
-                  <Choice
-                    key={g.k}
-                    active={data.goal === g.k}
-                    onClick={() => setData({ ...data, goal: g.k })}
-                    description={g.d}
-                  >
-                    {g.k}
-                  </Choice>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Footer nav */}
-      <footer className="fixed inset-x-0 bottom-0 border-t hairline bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-8 py-5">
-          <button
-            onClick={() => setStep(Math.max(0, step - 1))}
-            disabled={step === 0}
-            className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground disabled:opacity-30"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
-
-          <div className="flex items-center gap-1.5">
-            {steps.map((_, i) => (
-              <span
+        {/* progress */}
+        <div className="mx-auto max-w-[1100px] px-5 pb-3 sm:px-8">
+          <div className="flex gap-1.5">
+            {Array.from({ length: total }).map((_, i) => (
+              <div
                 key={i}
-                className={`h-1 rounded-full transition-all ${
-                  i === step ? "w-8 bg-foreground" : i < step ? "w-2 bg-foreground/60" : "w-2 bg-foreground/15"
+                className={`h-[3px] flex-1 rounded-full transition-all duration-500 ${
+                  i <= step ? "bg-court glow-court" : "bg-foreground/10"
                 }`}
               />
             ))}
           </div>
+        </div>
+      </header>
 
+      <main className="mx-auto max-w-[1100px] px-5 pb-32 pt-12 sm:px-8 sm:pt-20">
+        <div key={step} className="animate-float-up">
+          {step === 0 && (
+            <SportStep
+              value={profile.sport}
+              onChange={(sport) => setProfile((p) => ({ ...p, sport }))}
+            />
+          )}
+          {step === 1 && (
+            <LevelStep
+              value={profile.level}
+              onChange={(level) => setProfile((p) => ({ ...p, level }))}
+            />
+          )}
+          {step === 2 && (
+            <GoalStep
+              value={profile.goal}
+              onChange={(goal) => setProfile((p) => ({ ...p, goal }))}
+            />
+          )}
+        </div>
+
+        {/* footer nav */}
+        <div className="mt-16 flex items-center justify-between gap-4 border-t hairline pt-8">
           <button
-            onClick={next}
-            disabled={!canContinue}
-            className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-[13px] font-medium text-background transition hover:opacity-90 disabled:opacity-30"
+            type="button"
+            onClick={back}
+            disabled={step === 0}
+            className="inline-flex items-center gap-2 rounded-full border hairline px-5 py-3 text-[13px] text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
           >
-            {step === steps.length - 1 ? "Enter system" : "Continue"}
+            <ArrowLeft className="h-4 w-4" /> Back
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canNext}
+            className={`group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[14px] font-medium transition ${
+              canNext
+                ? "bg-court text-background glow-court hover:opacity-95"
+                : "bg-foreground/10 text-muted-foreground cursor-not-allowed"
+            }`}
+          >
+            {step === total - 1 ? "Generate my plan" : "Continue"}
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
           </button>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }
 
-function Choice({
-  children,
-  active,
-  onClick,
-  description,
-  large,
-  centered,
+/* ---------------- Step 1: Sport ---------------- */
+function SportStep({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+  return (
+    <section>
+      <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
+        <Sparkles className="mr-2 inline h-3 w-3" /> Discipline
+      </p>
+      <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+        What do you <span className="font-serif italic font-normal text-court-gradient">train?</span>
+      </h1>
+      <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+        Pick the sport you practise most. Your plan, drills and feedback will adapt to it.
+      </p>
+
+      <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {SPORTS.map((s) => {
+          const active = value === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onChange(s)}
+              className={`group relative overflow-hidden rounded-2xl border px-4 py-6 text-left transition ${
+                active
+                  ? "border-court bg-court/10 glow-court"
+                  : "hairline bg-card/40 hover:bg-card"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
+                  {s}
+                </span>
+                {active && <Check className="h-4 w-4 text-court" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Step 2: Level ---------------- */
+function LevelStep({
+  value,
+  onChange,
 }: {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-  description?: string;
-  large?: boolean;
-  centered?: boolean;
+  value: Profile["level"];
+  onChange: (l: Profile["level"]) => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className={`group relative flex flex-col bg-background p-8 text-left transition ${
-        centered ? "items-center text-center" : ""
-      } ${active ? "bg-card" : "hover:bg-card/60"}`}
-    >
-      <span
-        className={`block ${large ? "text-3xl md:text-4xl" : "text-2xl"} font-medium tracking-tight transition`}
-      >
-        {children}
-      </span>
-      {description && (
-        <span className="mt-2 text-[13px] text-muted-foreground">{description}</span>
-      )}
-      <span
-        className={`absolute right-6 top-6 grid h-6 w-6 place-items-center rounded-full border transition ${
-          active ? "border-foreground bg-foreground text-background" : "hairline text-transparent"
-        }`}
-      >
-        <Check className="h-3.5 w-3.5" />
-      </span>
-    </button>
+    <section>
+      <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
+        <Activity className="mr-2 inline h-3 w-3" /> Level
+      </p>
+      <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+        Where are you <span className="font-serif italic font-normal text-court-gradient">today?</span>
+      </h1>
+      <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+        Be honest. We'll calibrate intensity, volume and complexity to match.
+      </p>
+
+      <div className="mt-12 grid gap-3 sm:grid-cols-3">
+        {LEVELS.map((l) => {
+          const active = value === l.id;
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => onChange(l.id)}
+              className={`group relative flex h-full flex-col rounded-2xl border p-6 text-left transition ${
+                active
+                  ? "border-court bg-court/10 glow-court"
+                  : "hairline bg-card/40 hover:bg-card"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
+                  {l.sub}
+                </span>
+                {active && <Check className="h-4 w-4 text-court" />}
+              </div>
+              <p className={`mt-6 text-2xl font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
+                {l.label}
+              </p>
+              <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{l.detail}</p>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Step 3: Goal ---------------- */
+function GoalStep({ value, onChange }: { value: string; onChange: (g: string) => void }) {
+  return (
+    <section>
+      <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
+        <Target className="mr-2 inline h-3 w-3" /> Intent
+      </p>
+      <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+        What's the <span className="font-serif italic font-normal text-court-gradient">goal?</span>
+      </h1>
+      <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+        Pick one. We'll bias your plan towards it without losing the rest.
+      </p>
+
+      <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {GOALS.map((g) => {
+          const active = value === g;
+          return (
+            <button
+              key={g}
+              type="button"
+              onClick={() => onChange(g)}
+              className={`group flex items-center justify-between rounded-2xl border px-5 py-5 text-left transition ${
+                active
+                  ? "border-court bg-court/10 glow-court"
+                  : "hairline bg-card/40 hover:bg-card"
+              }`}
+            >
+              <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
+                {g}
+              </span>
+              {active && <Check className="h-4 w-4 text-court" />}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
