@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, Play, Check, Flame, Timer, Dumbbell, Activity,
+  ArrowLeft, Play, Check, Flame, Timer, Activity, Undo2,
   TrendingUp, ChevronRight, Calendar as CalendarIcon, Sparkles,
 } from "lucide-react";
 import sportTennis from "@/assets/sport-tennis.jpg";
@@ -27,29 +27,121 @@ type Session = {
   title: string;
   sport: string;
   duration: string;
+  durationMinutes: number;
   intensity: "Low" | "Medium" | "High";
   status: "done" | "today" | "upcoming";
   day: string;
   img: string;
 };
 
-const sessions: Session[] = [
-  { id: "s1", title: "Crosscourt rally", sport: "Tennis", duration: "1h 10m", intensity: "Medium", status: "done", day: "Mon", img: sportTennis },
-  { id: "s2", title: "Athletic power", sport: "Strength", duration: "55 min", intensity: "High", status: "done", day: "Tue", img: sportGym },
-  { id: "s3", title: "Recovery flow", sport: "Mobility", duration: "30 min", intensity: "Low", status: "done", day: "Wed", img: train2 },
-  { id: "s4", title: "Baseline rhythm & footwork", sport: "Tennis", duration: "1h 10m", intensity: "Medium", status: "today", day: "Thu", img: sportTennis },
-  { id: "s5", title: "Sprint intervals", sport: "Running", duration: "40 min", intensity: "High", status: "upcoming", day: "Fri", img: sportRunning },
-  { id: "s6", title: "Long run · easy pace", sport: "Running", duration: "1h 20m", intensity: "Low", status: "upcoming", day: "Sat", img: train1 },
-  { id: "s7", title: "Match simulation", sport: "Football", duration: "1h 30m", intensity: "High", status: "upcoming", day: "Sun", img: sportFootball },
+const initialSessions: Session[] = [
+  { id: "s1", title: "Crosscourt rally", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "done", day: "Mon", img: sportTennis },
+  { id: "s2", title: "Athletic power", sport: "Strength", duration: "55 min", durationMinutes: 55, intensity: "High", status: "done", day: "Tue", img: sportGym },
+  { id: "s3", title: "Recovery flow", sport: "Mobility", duration: "30 min", durationMinutes: 30, intensity: "Low", status: "done", day: "Wed", img: train2 },
+  { id: "s4", title: "Baseline rhythm & footwork", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "today", day: "Thu", img: sportTennis },
+  { id: "s5", title: "Sprint intervals", sport: "Running", duration: "40 min", durationMinutes: 40, intensity: "High", status: "upcoming", day: "Fri", img: sportRunning },
+  { id: "s6", title: "Long run · easy pace", sport: "Running", duration: "1h 20m", durationMinutes: 80, intensity: "Low", status: "upcoming", day: "Sat", img: train1 },
+  { id: "s7", title: "Match simulation", sport: "Football", duration: "1h 30m", durationMinutes: 90, intensity: "High", status: "upcoming", day: "Sun", img: sportFootball },
 ];
+
+const STATUS_KEY = "courtmind.training.status.v1";
+const HISTORY_KEY = "courtmind.history.v1";
+
+type StoredStatus = Record<string, { status: Session["status"]; completedAt?: string; logId?: string }>;
+type WorkoutEntry = {
+  id: string; date: string; title: string; sport?: string;
+  durationMinutes?: number; intensity?: "Low" | "Medium" | "High"; note?: string;
+};
+
+function readStatus(): StoredStatus {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(STATUS_KEY) || "{}"); } catch { return {}; }
+}
+function writeStatus(s: StoredStatus) {
+  try { localStorage.setItem(STATUS_KEY, JSON.stringify(s)); } catch {}
+}
+function readHistory(): WorkoutEntry[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
+}
+function writeHistory(h: WorkoutEntry[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+    // notify same-tab listeners (storage event only fires across tabs)
+    window.dispatchEvent(new CustomEvent("courtmind:history-updated"));
+  } catch {}
+}
 
 /* ---------- page ---------- */
 function TrainingPage() {
   const [tab, setTab] = useState<"all" | "done" | "today" | "upcoming">("all");
+  const [sessions, setSessions] = useState<Session[]>(initialSessions);
+
+  // Hydrate persisted status on mount.
+  useEffect(() => {
+    const stored = readStatus();
+    setSessions((prev) =>
+      prev.map((s) => (stored[s.id] ? { ...s, status: stored[s.id].status } : s))
+    );
+  }, []);
+
+  const completeSession = (id: string) => {
+    const target = sessions.find((s) => s.id === id);
+    if (!target || target.status === "done") return;
+
+    const logId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // 1. update session list
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status: "done" } : s)));
+
+    // 2. persist status
+    const stored = readStatus();
+    stored[id] = { status: "done", completedAt: now, logId };
+    writeStatus(stored);
+
+    // 3. add to shared workout history (drives /profile + /history charts)
+    const history = readHistory();
+    history.unshift({
+      id: logId,
+      date: now,
+      title: target.title,
+      sport: target.sport,
+      durationMinutes: target.durationMinutes,
+      intensity: target.intensity,
+    });
+    writeHistory(history);
+  };
+
+  const undoSession = (id: string) => {
+    const stored = readStatus();
+    const entry = stored[id];
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: s.id === "s4" ? "today" : "upcoming" } : s))
+    );
+    // Remove the auto-logged history entry if we created it.
+    if (entry?.logId) {
+      const history = readHistory().filter((h) => h.id !== entry.logId);
+      writeHistory(history);
+    }
+    delete stored[id];
+    writeStatus(stored);
+  };
+
   const filtered = useMemo(
     () => (tab === "all" ? sessions : sessions.filter((s) => s.status === tab)),
-    [tab]
+    [tab, sessions]
   );
+
+  // Derive live stats from sessions for the trio.
+  const doneCount = sessions.filter((s) => s.status === "done").length;
+  const totalCount = sessions.length;
+  const minutesDone = sessions
+    .filter((s) => s.status === "done")
+    .reduce((sum, s) => sum + s.durationMinutes, 0);
+  const volumeLabel = minutesDone >= 60
+    ? `${Math.floor(minutesDone / 60)}h ${minutesDone % 60}m`
+    : `${minutesDone} min`;
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
@@ -83,8 +175,8 @@ function TrainingPage() {
 
         {/* Stats trio */}
         <section className="mt-14 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
-          <StatTile label="This week" value="4" unit="/ 7 sessions" delta="On track" />
-          <StatTile label="Volume" value="5h 25m" unit="trained" delta="+38m vs last week" />
+          <StatTile label="This week" value={`${doneCount}`} unit={`/ ${totalCount} sessions`} delta={doneCount === totalCount ? "Week complete" : "On track"} />
+          <StatTile label="Volume" value={volumeLabel} unit="trained" delta={`${doneCount} session${doneCount === 1 ? "" : "s"} logged`} />
           <StatTile label="Streak" value="14" unit="days" delta="Personal best" />
         </section>
 
@@ -127,7 +219,12 @@ function TrainingPage() {
 
           <ul className="mt-6 space-y-3">
             {filtered.map((s) => (
-              <SessionRow key={s.id} session={s} />
+              <SessionRow
+                key={s.id}
+                session={s}
+                onComplete={() => completeSession(s.id)}
+                onUndo={() => undoSession(s.id)}
+              />
             ))}
             {filtered.length === 0 && (
               <li className="rounded-2xl border hairline bg-card p-10 text-center text-[14px] text-muted-foreground">
