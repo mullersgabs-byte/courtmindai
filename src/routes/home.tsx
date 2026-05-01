@@ -41,7 +41,7 @@ function HomePage() {
             <Link to="/home" className="text-foreground">Home</Link>
             <Link to="/training" className="transition hover:text-foreground">Training</Link>
             <Link to="/analyze" className="transition hover:text-foreground">Analyze</Link>
-            <Link to="/dashboard" className="transition hover:text-foreground">Plan</Link>
+            <Link to="/plan" className="transition hover:text-foreground">Plan</Link>
             <a className="transition hover:text-foreground" href="#">Archive</a>
           </nav>
           <div className="flex items-center gap-3">

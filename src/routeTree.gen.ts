@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrainingRouteImport } from './routes/training'
+import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ExerciseRouteImport } from './routes/exercise'
@@ -20,6 +21,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanRoute = PlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/plan': typeof PlanRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/plan': typeof PlanRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/exercise': typeof ExerciseRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/plan': typeof PlanRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/exercise'
     | '/home'
     | '/onboarding'
+    | '/plan'
     | '/training'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/exercise'
     | '/home'
     | '/onboarding'
+    | '/plan'
     | '/training'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/exercise'
     | '/home'
     | '/onboarding'
+    | '/plan'
     | '/training'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ExerciseRoute: typeof ExerciseRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
+  PlanRoute: typeof PlanRoute
   TrainingRoute: typeof TrainingRoute
 }
 
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/training'
       fullPath: '/training'
       preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plan': {
+      id: '/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof PlanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExerciseRoute: ExerciseRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
+  PlanRoute: PlanRoute,
   TrainingRoute: TrainingRoute,
 }
 export const routeTree = rootRouteImport
