@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Upload, Video, Image as ImageIcon, PenLine, ArrowLeft, Play, Pause,
   Sparkles, Check, Lock, ChevronRight, Activity, Target, Gauge, Zap,
+  CheckCircle2, AlertTriangle, XCircle, Lightbulb,
 } from "lucide-react";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
@@ -259,27 +260,36 @@ function ResultView({ onReset }: { onReset: () => void }) {
         <Metric icon={<Zap className="h-4 w-4" />} label="Tempo" value="79" unit="/100" />
       </section>
 
-      {/* Insights + locked premium */}
+      {/* Overall score with animated bar */}
+      <OverallScore score={8.7} />
+
+      {/* Feedback by severity + locked premium */}
       <section className="mt-10 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border hairline bg-card p-7 lg:col-span-2">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Key observations</p>
-          <ul className="mt-5 divide-y hairline">
-            {[
-              { t: "Hip rotation opens early", d: "Slight loss of power on contact. Delay rotation by ~120 ms." },
+        <div className="space-y-4 lg:col-span-2">
+          <FeedbackBlock
+            tone="success"
+            title="Strengths"
+            items={[
               { t: "Elbow path consistent", d: "Clean line through the swing — keep this base." },
+              { t: "Stable shoulder line", d: "Excellent kinetic chain on contact." },
+              { t: "Foot recovery balanced", d: "Center of mass holds well between shots." },
+            ]}
+          />
+          <FeedbackBlock
+            tone="warn"
+            title="To improve"
+            items={[
               { t: "Recovery step short", d: "Add one extra split-step before the next shot." },
-            ].map((o, i) => (
-              <li key={o.t} className="flex items-start gap-4 py-4">
-                <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-full border hairline text-[12px] text-court">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="text-[14px] font-medium">{o.t}</p>
-                  <p className="text-[13px] text-muted-foreground">{o.d}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+              { t: "Knee alignment drifts", d: "Right knee tracks slightly inward on landing." },
+            ]}
+          />
+          <FeedbackBlock
+            tone="danger"
+            title="Critical errors"
+            items={[
+              { t: "Hip rotation opens early", d: "Loses ~12% power on contact. Delay rotation by ~120 ms." },
+            ]}
+          />
         </div>
 
         {/* Locked deep analysis */}
@@ -308,6 +318,9 @@ function ResultView({ onReset }: { onReset: () => void }) {
           </div>
         </div>
       </section>
+
+      {/* AI suggestions */}
+      <AiSuggestions />
 
       {/* Suggested drills */}
       <section className="mt-10">
