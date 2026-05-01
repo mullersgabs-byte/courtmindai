@@ -475,9 +475,10 @@ function fmt(s: number) {
 }
 
 function toneOf(t: VideoEvent["type"]) {
-  if (t === "bad")  return { label: "Mistake",  color: "var(--danger)",  text: "text-danger",  bg: "bg-danger/10",  icon: null, glow: "glow-danger",  border: "border-danger/40" };
-  if (t === "warn") return { label: "Improve",  color: "var(--warn)",    text: "text-warn",    bg: "bg-warn/10",    icon: null, glow: "glow-warn",    border: "border-warn/40" };
-  return                 { label: "Good",     color: "var(--court)",   text: "text-success", bg: "bg-success/10", icon: null, glow: "",             border: "border-success/40" };
+  // Solid colored pills for high-contrast tags
+  if (t === "bad")  return { label: "Mistake", color: "var(--danger)",  text: "text-danger",  bg: "bg-danger",  pillText: "text-background", chipBg: "bg-danger/15",  chipText: "text-danger",  glow: "glow-danger", border: "border-danger/50",  dot: "bg-danger" };
+  if (t === "warn") return { label: "Improve", color: "var(--warn)",    text: "text-warn",    bg: "bg-warn",    pillText: "text-background", chipBg: "bg-warn/15",    chipText: "text-warn",    glow: "glow-warn",   border: "border-warn/50",    dot: "bg-warn" };
+  return                 { label: "Good",    color: "var(--court)",   text: "text-success", bg: "bg-success", pillText: "text-background", chipBg: "bg-success/15", chipText: "text-success", glow: "",            border: "border-success/50", dot: "bg-success" };
 }
 
 function Legend({ tone, label }: { tone: "success" | "warn" | "danger"; label: string }) {
@@ -629,9 +630,11 @@ function EvidenceCard({
         {/* Tag */}
         <div className="absolute left-3 top-3">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] ${tn.bg} ${tn.text}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] shadow-sm ${tn.bg} ${tn.pillText}`}
+            style={{ boxShadow: `0 4px 14px ${tn.color}55` }}
           >
-            {tn.icon} {tn.label}
+            <span className="h-1.5 w-1.5 rounded-full bg-background/80" />
+            {tn.label}
           </span>
         </div>
 
