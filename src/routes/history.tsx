@@ -264,9 +264,6 @@ function StatCard({ label, value, icon, hint }: { label: string; value: string; 
 function EmptyState() {
   return (
     <div className="rounded-3xl border hairline bg-card p-12 text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border hairline">
-        
-      </div>
       <h3 className="mt-5 text-xl font-medium tracking-tight">Nothing here yet</h3>
       <p className="mt-2 text-[14px] text-muted-foreground">
         Run an analysis or log a workout — it will appear in your timeline automatically.

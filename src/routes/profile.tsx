@@ -267,11 +267,11 @@ function BadgeCard({ badge }: { badge: Badge }) {
       badge.earned ? "bg-card hairline" : "bg-card/40 hairline opacity-60"
     }`}>
       <div className="flex items-center justify-between">
-        <div className={`grid h-9 w-9 place-items-center rounded-full border ${
-          badge.earned ? "border-foreground/40 bg-foreground/5" : "hairline"
+        <span className={`text-[10px] uppercase tracking-[0.24em] ${
+          badge.earned ? "text-foreground" : "text-muted-foreground"
         }`}>
-          
-        </div>
+          {badge.earned ? "Earned" : "Locked"}
+        </span>
         {badge.earned && (
           <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">Earned</span>
         )}
