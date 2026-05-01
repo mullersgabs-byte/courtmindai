@@ -176,29 +176,33 @@ function UploadView({ onPick }: { onPick: (file: File) => void }) {
           const f = e.dataTransfer.files?.[0];
           if (f) onPick(f);
         }}
-        className={`group relative mt-12 block w-full overflow-hidden rounded-3xl border bg-card p-10 text-left transition sm:p-14 ${
-          drag ? "border-court glow-court" : "hairline hover:glow-court"
+        className={`group relative mt-12 block w-full overflow-hidden rounded-3xl border-2 border-dashed bg-card p-10 text-left transition sm:p-14 ${
+          drag ? "border-foreground bg-foreground/5" : "border-foreground/25 hover:border-foreground/60 hover:bg-foreground/[0.03]"
         }`}
       >
-        <div className="absolute inset-0 opacity-30 transition group-hover:opacity-50">
-          <div className="absolute -top-32 left-1/3 h-96 w-96 rounded-full bg-court/20 blur-3xl" />
-        </div>
-        <div className="relative flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-5">
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-court text-ink glow-court animate-pulse-court">
-              
-            </span>
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.24em] text-court">Upload</p>
-              <p className="mt-1 text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">
-                Choose or drop a training video
-              </p>
-              <p className="mt-1 text-[13px] text-muted-foreground">MP4, MOV, WebM · up to 100 MB</p>
-            </div>
+        <div className="relative flex flex-col items-center justify-center gap-5 py-6 text-center">
+          <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-foreground/30 font-serif text-3xl leading-none">
+            ↑
+          </span>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Drop your video here</p>
+            <p className="mt-2 text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-tight tracking-tight">
+              Click to browse, or drag a file into this area
+            </p>
+            <p className="mt-2 text-[13px] text-muted-foreground">MP4, MOV or WebM · up to 100 MB · 10–60 seconds is ideal</p>
           </div>
-          
+          <span className="mt-2 inline-flex items-center rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background transition group-hover:opacity-90">
+            Choose video file
+          </span>
         </div>
       </button>
+
+      {/* How it works */}
+      <ol className="mt-10 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
+        <Step n="01" title="Upload" detail="Drop a clip in the area above." />
+        <Step n="02" title="AI watches" detail="It scans frame by frame for hits and slips." />
+        <Step n="03" title="See evidence" detail="A gallery of frames from your own video, tagged." />
+      </ol>
 
       <div className="mt-12 rounded-2xl border hairline glass p-6">
         <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">For best precision</p>
@@ -210,6 +214,16 @@ function UploadView({ onPick }: { onPick: (file: File) => void }) {
         </ul>
       </div>
     </div>
+  );
+}
+
+function Step({ n, title, detail }: { n: string; title: string; detail: string }) {
+  return (
+    <li className="bg-background p-5">
+      <p className="font-serif text-2xl tracking-tight text-muted-foreground">{n}</p>
+      <p className="mt-3 text-[14px] font-medium tracking-tight">{title}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{detail}</p>
+    </li>
   );
 }
 
