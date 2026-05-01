@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { generatePlan, type WeeklyPlan, type DayPlan } from "@/server/plan.functions";
+import {
+  generatePlan,
+  generatePlanFromInsights,
+  type WeeklyPlan,
+  type DayPlan,
+} from "@/server/plan.functions";
+import {
+  getLastAnalysis,
+  getRecentCheckIns,
+  getSessionLogs,
+  type StoredAnalysis,
+} from "@/lib/sessionStore";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
@@ -43,6 +54,7 @@ const LEVELS: Array<{ id: "beginner"|"intermediate"|"advanced"; label: string; s
 
 function PlanPage() {
   const generate = useServerFn(generatePlan);
+  const generateFromInsights = useServerFn(generatePlanFromInsights);
 
   const [sport, setSport] = useState("Tennis");
   const [level, setLevel] = useState<"beginner"|"intermediate"|"advanced">("intermediate");
@@ -65,6 +77,15 @@ function PlanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
+  const [lastAnalysis, setLastAnalysis] = useState<StoredAnalysis | null>(null);
+  const [logsCount, setLogsCount] = useState(0);
+  const [checkinsCount, setCheckinsCount] = useState(0);
+
+  useEffect(() => {
+    setLastAnalysis(getLastAnalysis());
+    setLogsCount(getSessionLogs().length);
+    setCheckinsCount(getRecentCheckIns(7).length);
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +93,44 @@ function PlanPage() {
     try {
       const res = await generate({
         data: { sport, level, daysPerWeek: days, focus, sessionMinutes: minutes },
+      });
+      if (res.error) setError(res.error);
+      else setPlan(res.plan);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGenerateFromInsights = async () => {
+    setLoading(true); setError(null); setPlan(null);
+    try {
+      const analysis = getLastAnalysis();
+      const recentLogs = getSessionLogs().slice(0, 10).map((l) => ({
+        date: l.date,
+        title: l.title,
+        actualMinutes: l.actualMinutes,
+        rpe: l.rpe,
+        notes: l.notes,
+      }));
+      const recentCheckIns = getRecentCheckIns(7).map((c) => ({
+        date: c.date,
+        energy: c.energy,
+        soreness: c.soreness,
+        sleepHours: c.sleepHours,
+        note: c.note,
+      }));
+
+      const res = await generateFromInsights({
+        data: {
+          sport, level, daysPerWeek: days, sessionMinutes: minutes, focus,
+          videoVerdict: analysis?.verdict ?? "",
+          videoEvents: analysis?.events ?? [],
+          recentLogs,
+          recentCheckIns,
+        },
       });
       if (res.error) setError(res.error);
       else setPlan(res.plan);
@@ -96,6 +155,15 @@ function PlanPage() {
       </header>
 
       <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
+        {/* Insight-driven generation banner */}
+        <InsightsBanner
+          analysis={lastAnalysis}
+          logsCount={logsCount}
+          checkinsCount={checkinsCount}
+          loading={loading}
+          onGenerate={onGenerateFromInsights}
+        />
+
         {/* What's next + progress */}
         <NextUpAndProgress sport={sport} level={level} plan={plan} />
 
@@ -212,6 +280,85 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
       {children}
     </div>
+  );
+}
+
+/* ---------- Insights banner: generate plan from last video + check-ins ---------- */
+function InsightsBanner({
+  analysis,
+  logsCount,
+  checkinsCount,
+  loading,
+  onGenerate,
+}: {
+  analysis: StoredAnalysis | null;
+  logsCount: number;
+  checkinsCount: number;
+  loading: boolean;
+  onGenerate: () => void;
+}) {
+  const errors = analysis?.events.filter((e) => e.type === "bad" || e.type === "warn") ?? [];
+  const ready = (analysis && errors.length > 0) || logsCount > 0 || checkinsCount > 0;
+
+  return (
+    <section className="mb-12 overflow-hidden rounded-3xl border hairline bg-card p-7 sm:p-9">
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
+            Adaptive plan
+          </p>
+          <h2 className="mt-3 text-balance text-[clamp(1.4rem,2.5vw,2rem)] font-medium leading-tight tracking-tight">
+            Build a 7-day week from <span className="font-serif italic">your real signals.</span>
+          </h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+            We use your last video errors, RPE from logged sessions and your daily check-ins to compose a corrective week with exercises that target exactly what's holding you back.
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-2 text-[12px]">
+            <Pill tone={analysis ? "court" : "muted"}>
+              {analysis ? `${errors.length} mistakes detected on video` : "No video analysed yet"}
+            </Pill>
+            <Pill tone={logsCount > 0 ? "court" : "muted"}>
+              {logsCount} logged session{logsCount === 1 ? "" : "s"}
+            </Pill>
+            <Pill tone={checkinsCount > 0 ? "court" : "muted"}>
+              {checkinsCount} recent check-in{checkinsCount === 1 ? "" : "s"}
+            </Pill>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={loading || !ready}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-court px-6 py-3.5 text-[13px] font-medium text-ink transition hover:opacity-90 glow-court-soft disabled:opacity-50"
+          >
+            {loading ? "Composing…" : "Generate from my errors"}
+          </button>
+          {!analysis && (
+            <Link to="/analyze" className="text-[12px] text-muted-foreground transition hover:text-foreground">
+              → Analyse a video first
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Pill({ tone, children }: { tone: "court" | "muted"; children: React.ReactNode }) {
+  return (
+    <span
+      className={[
+        "rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]",
+        tone === "court"
+          ? "bg-court/15 text-court"
+          : "border hairline text-muted-foreground",
+      ].join(" ")}
+    >
+      {children}
+    </span>
   );
 }
 

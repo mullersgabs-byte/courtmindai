@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeVideo, type VideoAnalysis, type VideoEvent } from "@/server/analyze.functions";
+import { saveLastAnalysis } from "@/lib/sessionStore";
 
 export const Route = createFileRoute("/analyze")({
   head: () => ({
@@ -94,6 +95,19 @@ function AnalyzePage() {
       setProgress(100);
       setAnalysis(result);
       setPhase("result");
+      // Persist the last analysis so /plan can build a corrective week from
+      // the actual mistakes detected on the athlete's video.
+      try {
+        saveLastAnalysis({
+          id: result.id,
+          date: new Date().toISOString(),
+          overallScore: result.overallScore,
+          verdict: result.verdict,
+          events: result.events,
+        });
+      } catch (err) {
+        console.warn("Could not persist last analysis", err);
+      }
     } catch (e) {
       window.clearInterval(interval);
       console.error(e);

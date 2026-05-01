@@ -6,6 +6,14 @@ import sportRunning from "@/assets/sport-running.jpg";
 import sportFootball from "@/assets/sport-football.jpg";
 import train1 from "@/assets/train-1.jpg";
 import train2 from "@/assets/train-2.jpg";
+import {
+  addSessionLog,
+  getWeekCheckIns,
+  saveDailyCheckIn,
+  isoDate,
+  weekStart,
+  type SessionLog,
+} from "@/lib/sessionStore";
 
 export const Route = createFileRoute("/training")({
   head: () => ({
@@ -46,7 +54,8 @@ const HISTORY_KEY = "courtmind.history.v1";
 type StoredStatus = Record<string, { status: Session["status"]; completedAt?: string; logId?: string }>;
 type WorkoutEntry = {
   id: string; date: string; title: string; sport?: string;
-  durationMinutes?: number; intensity?: "Low" | "Medium" | "High"; note?: string;
+  durationMinutes?: number; intensity?: "Low" | "Medium" | "High";
+  note?: string;
 };
 
 function readStatus(): StoredStatus {
@@ -72,6 +81,7 @@ function writeHistory(h: WorkoutEntry[]) {
 function TrainingPage() {
   const [tab, setTab] = useState<"all" | "done" | "today" | "upcoming">("all");
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const [logTarget, setLogTarget] = useState<Session | null>(null);
 
   // Hydrate persisted status on mount.
   useEffect(() => {
@@ -84,16 +94,23 @@ function TrainingPage() {
   const completeSession = (id: string) => {
     const target = sessions.find((s) => s.id === id);
     if (!target || target.status === "done") return;
+    // Open the session log modal — actual completion happens after RPE/notes.
+    setLogTarget(target);
+  };
 
+  const finalizeSession = (
+    target: Session,
+    payload: { actualMinutes: number; rpe: number; notes: string },
+  ) => {
     const logId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     // 1. update session list
-    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status: "done" } : s)));
+    setSessions((prev) => prev.map((s) => (s.id === target.id ? { ...s, status: "done" } : s)));
 
     // 2. persist status
     const stored = readStatus();
-    stored[id] = { status: "done", completedAt: now, logId };
+    stored[target.id] = { status: "done", completedAt: now, logId };
     writeStatus(stored);
 
     // 3. add to shared workout history (drives /profile + /history charts)
@@ -103,10 +120,25 @@ function TrainingPage() {
       date: now,
       title: target.title,
       sport: target.sport,
-      durationMinutes: target.durationMinutes,
+      durationMinutes: payload.actualMinutes,
       intensity: target.intensity,
+      note: payload.notes || undefined,
     });
     writeHistory(history);
+
+    // 4. add a structured session log used by /plan to generate better plans
+    const log: SessionLog = {
+      id: logId,
+      date: now,
+      title: target.title,
+      sport: target.sport,
+      plannedMinutes: target.durationMinutes,
+      actualMinutes: payload.actualMinutes,
+      rpe: payload.rpe,
+      notes: payload.notes || undefined,
+    };
+    addSessionLog(log);
+    setLogTarget(null);
   };
 
   const undoSession = (id: string) => {
@@ -243,24 +275,58 @@ function TrainingPage() {
           </p>
         </section>
       </main>
+
+      {logTarget && (
+        <SessionLogModal
+          session={logTarget}
+          onClose={() => setLogTarget(null)}
+          onSave={(payload) => finalizeSession(logTarget, payload)}
+        />
+      )}
     </div>
   );
 }
 
 /* ---------- Daily check-in ---------- */
 function DailyCheckIn() {
-  const [days, setDays] = useState<boolean[]>([true, true, true, true, false, false, false]);
-  const [today, setToday] = useState(3); // Thursday
-  const [energy, setEnergy] = useState(3);
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
+  const [today, setToday] = useState(0);
+  const [energy, setEnergy] = useState(3);
+  const [soreness, setSoreness] = useState(1);
+  const [days, setDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
+  const [todayDate, setTodayDate] = useState<string>(isoDate());
 
+  // Hydrate the whole week from localStorage so check-ins persist across sessions.
   useEffect(() => {
-    setToday(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+    const now = new Date();
+    const dayIdx = (now.getDay() + 6) % 7; // 0=Mon
+    setToday(dayIdx);
+    setTodayDate(isoDate(now));
+
+    const week = getWeekCheckIns(now);
+    const start = weekStart(now);
+    const next = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return Boolean(week.days[isoDate(d)]);
+    });
+    setDays(next);
+
+    const todayEntry = week.days[isoDate(now)];
+    if (todayEntry) {
+      setEnergy(todayEntry.energy);
+      if (typeof todayEntry.soreness === "number") setSoreness(todayEntry.soreness);
+    }
   }, []);
 
-  const checkIn = () => {
-    setDays((d) => d.map((v, i) => (i === today ? true : v)));
-  };
+  // Auto-save the daily check-in whenever the athlete moves the energy or
+  // soreness sliders. The whole week is persisted client-side.
+  useEffect(() => {
+    if (!todayDate) return;
+    saveDailyCheckIn({ date: todayDate, energy, soreness });
+    setDays((prev) => prev.map((v, i) => (i === today ? true : v)));
+  }, [energy, soreness, todayDate, today]);
+
   const checkedToday = days[today];
 
   return (
@@ -318,7 +384,7 @@ function DailyCheckIn() {
       </div>
 
       <button
-        onClick={checkIn}
+        onClick={() => saveDailyCheckIn({ date: todayDate, energy, soreness })}
         disabled={checkedToday}
         className={[
           "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-[14px] font-medium transition",
@@ -327,8 +393,29 @@ function DailyCheckIn() {
             : "bg-court text-ink hover:opacity-90 glow-court",
         ].join(" ")}
       >
-        {checkedToday ? <> Checked in</> : <> Check in for today</>}
+        {checkedToday ? <>Saved · auto-synced</> : <>Save check-in</>}
       </button>
+
+      {/* Soreness slider */}
+      <div className="mt-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Soreness</p>
+          <p className="text-[12px] text-foreground">{["None","Mild","Moderate","High","Extreme"][soreness]}</p>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          {[0,1,2,3,4].map((i) => (
+            <button
+              key={i}
+              onClick={() => setSoreness(i)}
+              className={[
+                "h-1.5 flex-1 rounded-full transition",
+                i <= soreness ? "bg-warn" : "bg-foreground/10 hover:bg-foreground/20",
+              ].join(" ")}
+              aria-label={`Soreness ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -556,6 +643,128 @@ function DotsChart({ count, active }: { count: number; active: number }) {
           ].join(" ")}
         />
       ))}
+    </div>
+  );
+}
+
+/* ---------- Session log modal (RPE · real duration · notes) ---------- */
+function SessionLogModal({
+  session,
+  onClose,
+  onSave,
+}: {
+  session: Session;
+  onClose: () => void;
+  onSave: (payload: { actualMinutes: number; rpe: number; notes: string }) => void;
+}) {
+  const [rpe, setRpe] = useState(7);
+  const [actual, setActual] = useState(session.durationMinutes);
+  const [notes, setNotes] = useState("");
+
+  const rpeLabel =
+    rpe <= 3 ? "Very easy" :
+    rpe <= 5 ? "Easy" :
+    rpe <= 7 ? "Moderate" :
+    rpe <= 9 ? "Hard" : "Maximal";
+  const rpeTone =
+    rpe <= 5 ? "text-success" : rpe <= 7 ? "text-warn" : "text-danger";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/70 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-md rounded-3xl border hairline bg-card p-6 shadow-2xl animate-float-up sm:p-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-court">Log this session</p>
+            <h3 className="mt-2 text-[18px] font-medium tracking-tight">{session.title}</h3>
+            <p className="text-[12px] text-muted-foreground">{session.sport} · planned {session.durationMinutes} min</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full border hairline px-3 py-1 text-[12px] text-muted-foreground transition hover:text-foreground"
+          >
+            Close
+          </button>
+        </div>
+
+        {/* Actual duration */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Real duration</p>
+            <p className="text-[13px] text-foreground">{actual} min</p>
+          </div>
+          <input
+            type="range" min={5} max={180} step={5} value={actual}
+            onChange={(e) => setActual(Number(e.target.value))}
+            className="mt-3 w-full accent-[var(--court)]"
+            style={{ colorScheme: "dark" }}
+          />
+        </div>
+
+        {/* RPE */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">RPE · perceived effort</p>
+            <p className={`text-[13px] ${rpeTone}`}>{rpe}/10 · {rpeLabel}</p>
+          </div>
+          <div className="mt-3 grid grid-cols-10 gap-1.5">
+            {Array.from({ length: 10 }).map((_, i) => {
+              const n = i + 1;
+              const active = n <= rpe;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRpe(n)}
+                  className={[
+                    "h-8 rounded-md text-[11px] font-medium transition",
+                    active
+                      ? n <= 5
+                        ? "bg-success/80 text-ink"
+                        : n <= 7
+                          ? "bg-warn/80 text-ink"
+                          : "bg-danger/80 text-ink"
+                      : "border hairline text-muted-foreground hover:border-court/30",
+                  ].join(" ")}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="mt-5">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Notes</p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
+            placeholder="How did it feel? Any pain, breakthrough, technical cue?"
+            rows={3}
+            className="mt-2 w-full resize-none rounded-xl border hairline bg-background px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:border-court/50 focus:outline-none focus:ring-1 focus:ring-court/40"
+          />
+          <p className="mt-1 text-right text-[10px] text-muted-foreground">{notes.length}/500</p>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-full px-4 py-2.5 text-[13px] text-muted-foreground transition hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave({ actualMinutes: actual, rpe, notes: notes.trim() })}
+            className="rounded-full bg-court px-5 py-2.5 text-[13px] font-medium text-ink transition hover:opacity-90 glow-court-soft"
+          >
+            Save & complete
+          </button>
+        </div>
+
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">
+          Logs feed your weekly plan — better data, better plans.
+        </p>
+      </div>
     </div>
   );
 }

@@ -22,7 +22,6 @@ function Index() {
         <Method />
         <Numbers />
         <Disciplines />
-        <Pricing />
         <Closing />
       </main>
       <Footer />
@@ -42,7 +41,6 @@ function Nav() {
         <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
           <a href="#method" className="transition hover:text-foreground">Method</a>
           <a href="#capabilities" className="transition hover:text-foreground">Capabilities</a>
-          <a href="#pricing" className="transition hover:text-foreground">Membership</a>
           <a href="#disciplines" className="transition hover:text-foreground">Disciplines</a>
         </nav>
         <div className="flex items-center gap-3">
@@ -281,70 +279,6 @@ function Disciplines() {
 }
 
 /* ---------------- Pricing ---------------- */
-const tiers = [
-  { name: "Essential", price: "Free", note: "Try the system", features: ["3 sessions / month", "Performance score", "One discipline"], featured: false },
-  { name: "Member", price: "$24", note: "Per month", features: ["Unlimited sessions", "Structured weekly plan", "Full feedback", "All disciplines", "Progress archive"], featured: true },
-  { name: "Atelier", price: "$120", note: "Per month", features: ["Everything in Member", "Human coach review", "Custom drill library", "Quarterly strategy call", "Priority support"], featured: false },
-];
-
-function Pricing() {
-  return (
-    <section id="pricing" className="mx-auto max-w-[1400px] px-8 py-32">
-      <div className="mx-auto mb-20 max-w-3xl text-center">
-        <p className="mb-6 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">Membership</p>
-        <h2 className="text-balance text-[clamp(2.2rem,4.5vw,4rem)] font-medium leading-[0.98] tracking-tight">
-          A quiet investment in <span className="font-serif italic font-normal">how you train.</span>
-        </h2>
-      </div>
-
-      <div className="grid gap-px bg-foreground/10 md:grid-cols-3">
-        {tiers.map((t) => (
-          <div
-            key={t.name}
-            className={`relative flex flex-col p-10 transition ${
-              t.featured ? "bg-foreground text-background" : "bg-background"
-            }`}
-          >
-            {t.featured && (
-              <span className="absolute right-10 top-10 text-[10px] font-medium uppercase tracking-[0.24em] text-background/60">
-                Recommended
-              </span>
-            )}
-            <p className={`text-[11px] font-medium uppercase tracking-[0.24em] ${t.featured ? "text-background/60" : "text-muted-foreground"}`}>
-              {t.name}
-            </p>
-            <div className="mt-12 flex items-baseline gap-3">
-              <p className="text-6xl font-medium tracking-tight">{t.price}</p>
-              <p className={`text-[13px] ${t.featured ? "text-background/60" : "text-muted-foreground"}`}>
-                {t.note}
-              </p>
-            </div>
-            <ul className={`mt-12 space-y-3 text-[14px] ${t.featured ? "text-background/85" : "text-foreground/80"}`}>
-              {t.features.map((f) => (
-                <li key={f} className="flex items-start gap-3">
-                  <span className={`mt-2 block h-px w-4 ${t.featured ? "bg-background/40" : "bg-foreground/30"}`} />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/onboarding"
-              className={`mt-12 inline-flex items-center justify-between rounded-full px-5 py-3.5 text-[13px] font-medium transition ${
-                t.featured
-                  ? "bg-background text-foreground hover:opacity-90"
-                  : "border hairline hover:bg-card"
-              }`}
-            >
-              Begin
-              
-            </Link>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /* ---------------- Closing ---------------- */
 function Closing() {
   return (
@@ -384,7 +318,7 @@ function Footer() {
           </p>
         </div>
 
-        <FooterCol title="System" links={["Method", "Capabilities", "Disciplines", "Membership"]} />
+        <FooterCol title="System" links={["Method", "Capabilities", "Disciplines"]} />
         <FooterCol title="Company" links={["About", "Journal", "Contact", "Press"]} />
         <FooterCol title="Legal" links={["Privacy", "Terms", "Cookies"]} />
       </div>
