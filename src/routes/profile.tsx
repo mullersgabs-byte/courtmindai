@@ -272,9 +272,6 @@ function BadgeCard({ badge }: { badge: Badge }) {
         }`}>
           {badge.earned ? "Earned" : "Locked"}
         </span>
-        {badge.earned && (
-          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">Earned</span>
-        )}
       </div>
       <p className="mt-4 text-[14px] font-medium tracking-tight">{badge.title}</p>
       <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{badge.detail}</p>
