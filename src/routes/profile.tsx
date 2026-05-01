@@ -215,7 +215,7 @@ function ProfilePage() {
 
 /* ---------------- pieces ---------------- */
 
-function Kpi({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon: React.ReactNode }) {
+function Kpi({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon?: React.ReactNode }) {
   return (
     <div className="rounded-2xl border hairline bg-card p-5">
       <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ function EmptyChart({ label }: { label: string }) {
   );
 }
 
-function SectionHeader({ icon, title, hint }: { icon: React.ReactNode; title: string; hint?: string }) {
+function SectionHeader({ icon, title, hint }: { icon?: React.ReactNode; title: string; hint?: string }) {
   return (
     <div className="flex items-center justify-between">
       <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">

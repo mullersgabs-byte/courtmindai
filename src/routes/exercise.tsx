@@ -170,7 +170,7 @@ function ExercisePage() {
   );
 }
 
-function Meta({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Meta({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
     <li className="bg-background p-5">
       <span className="grid h-8 w-8 place-items-center rounded-full border hairline text-court">{icon}</span>

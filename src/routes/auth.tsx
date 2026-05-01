@@ -160,7 +160,7 @@ function AuthPage() {
   );
 }
 
-function Field({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function Field({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="flex items-center gap-3 rounded-xl border hairline bg-card px-4 py-3 transition focus-within:border-foreground/40">
       <span className="text-muted-foreground">{icon}</span>

@@ -248,7 +248,7 @@ function HistoryPage() {
 
 /* ---------------- pieces ---------------- */
 
-function StatCard({ label, value, icon, hint }: { label: string; value: string; icon: React.ReactNode; hint?: string }) {
+function StatCard({ label, value, icon, hint }: { label: string; value: string; icon?: React.ReactNode; hint?: string }) {
   return (
     <div className="rounded-2xl border hairline bg-card p-5">
       <div className="flex items-center justify-between">

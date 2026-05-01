@@ -297,7 +297,7 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Stat({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-card p-5">
       <div className="flex items-center justify-between">
@@ -412,7 +412,7 @@ function DayCard({ day, index }: { day: DayPlan; index: number }) {
   );
 }
 
-function Block({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Block({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-5 first:mt-0">
       <p className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
