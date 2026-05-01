@@ -12,7 +12,28 @@ export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
 });
 
-const SPORTS = ["Tennis", "Running", "Strength", "Football", "Pilates", "Swimming", "Cycling", "Climbing"];
+const SPORTS = [
+  "Tennis",
+  "Volleyball",
+  "Beach Volleyball",
+  "Padel",
+  "Basketball",
+  "Football",
+  "Running",
+  "Cycling",
+  "Swimming",
+  "Strength",
+  "CrossFit",
+  "Pilates",
+  "Yoga",
+  "Boxing",
+  "MMA",
+  "Climbing",
+  "Surf",
+  "Skate",
+  "Golf",
+  "Triathlon",
+];
 const LEVELS: Array<{ id: "beginner"|"intermediate"|"advanced"; label: string; sub: string; detail: string }> = [
   { id: "beginner",     label: "Beginner",     sub: "Building the base",  detail: "New to structured training. We'll start gently and grow your capacity week by week." },
   { id: "intermediate", label: "Intermediate", sub: "Refining your form", detail: "You train consistently. We'll sharpen technique, balance load, and close specific gaps." },
