@@ -161,11 +161,6 @@ function HistoryPage() {
             <StatCard
               label="Avg. score"
               value={avgScore == null ? "—" : avgScore.toFixed(1)}
-              icon={
-                trend > 0 ?  :
-                trend < 0 ?  :
-                
-              }
               hint={trend === 0 ? undefined : trend > 0 ? `+${trend.toFixed(1)} vs prev` : `${trend.toFixed(1)} vs prev`}
             />
           </div>

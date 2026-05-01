@@ -375,9 +375,9 @@ function ResultView({
           <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 bg-gradient-to-t from-background to-transparent p-5">
             <button
               onClick={togglePlay}
-              className="grid h-10 w-10 place-items-center rounded-full bg-court text-ink glow-court-soft"
+              className="grid h-10 w-10 place-items-center rounded-full bg-court text-[11px] font-medium uppercase tracking-[0.18em] text-ink glow-court-soft"
             >
-              {playing ?  : }
+              {playing ? "II" : "▸"}
             </button>
             <div className="flex-1">
               <div onClick={seekBar} className="relative h-2 cursor-pointer rounded-full bg-foreground/15">
@@ -461,9 +461,9 @@ function fmt(s: number) {
 }
 
 function toneOf(t: VideoEvent["type"]) {
-  if (t === "bad")  return { label: "Mistake",  color: "var(--danger)",  text: "text-danger",  bg: "bg-danger/10",  icon: ,  glow: "glow-danger",  border: "border-danger/40" };
-  if (t === "warn") return { label: "Improve",  color: "var(--warn)",    text: "text-warn",    bg: "bg-warn/10",    icon: , glow: "glow-warn",   border: "border-warn/40" };
-  return                 { label: "Good",     color: "var(--court)",   text: "text-success", bg: "bg-success/10", icon: ,   glow: "",            border: "border-success/40" };
+  if (t === "bad")  return { label: "Mistake",  color: "var(--danger)",  text: "text-danger",  bg: "bg-danger/10",  icon: null, glow: "glow-danger",  border: "border-danger/40" };
+  if (t === "warn") return { label: "Improve",  color: "var(--warn)",    text: "text-warn",    bg: "bg-warn/10",    icon: null, glow: "glow-warn",    border: "border-warn/40" };
+  return                 { label: "Good",     color: "var(--court)",   text: "text-success", bg: "bg-success/10", icon: null, glow: "",             border: "border-success/40" };
 }
 
 function Legend({ tone, label }: { tone: "success" | "warn" | "danger"; label: string }) {
@@ -602,7 +602,7 @@ function EvidenceCard({
           <img src={thumb} alt={ev.title} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-muted-foreground">
-            {loading ?  : }
+            {loading ? "Loading…" : ""}
           </div>
         )}
         {/* Gradient + tone tint */}

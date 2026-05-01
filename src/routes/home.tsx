@@ -107,14 +107,14 @@ function HomePage() {
                 <div>
                   <ul className="divide-y hairline">
                     {[
-                      { i: , t: "Warm-up", d: "Mobility · 10 min" },
-                      { i: , t: "Footwork ladder", d: "Lateral · 15 min" },
-                      { i: , t: "Crosscourt rally", d: "20-ball sets · 30 min" },
-                      { i: , t: "Serve placement", d: "Wide / T / body · 15 min" },
+                      { t: "Warm-up", d: "Mobility · 10 min" },
+                      { t: "Footwork ladder", d: "Lateral · 15 min" },
+                      { t: "Crosscourt rally", d: "20-ball sets · 30 min" },
+                      { t: "Serve placement", d: "Wide / T / body · 15 min" },
                     ].map((b) => (
                       <li key={b.t} className="flex items-center gap-4 py-3.5">
-                        <span className="grid h-9 w-9 place-items-center rounded-full border hairline text-court">
-                          {b.i}
+                        <span className="grid h-9 w-9 place-items-center rounded-full border hairline text-[11px] font-medium uppercase tracking-[0.18em] text-court">
+                          ·
                         </span>
                         <div className="flex-1">
                           <p className="text-[14px] font-medium">{b.t}</p>

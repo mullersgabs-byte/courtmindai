@@ -183,7 +183,7 @@ function SportStep({ value, onChange }: { value: string; onChange: (s: string) =
                 <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                   {s}
                 </span>
-                {active && }
+                {active && <span className="text-court">✓</span>}
               </div>
             </button>
           );
@@ -231,7 +231,7 @@ function LevelStep({
                 <span className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                   {l.sub}
                 </span>
-                {active && }
+                {active && <span className="text-court">✓</span>}
               </div>
               <p className={`mt-6 text-2xl font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                 {l.label}
@@ -276,7 +276,7 @@ function GoalStep({ value, onChange }: { value: string; onChange: (g: string) =>
               <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                 {g}
               </span>
-              {active && }
+              {active && <span className="text-court">✓</span>}
             </button>
           );
         })}

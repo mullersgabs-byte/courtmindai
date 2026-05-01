@@ -286,7 +286,7 @@ function DailyCheckIn() {
                       : "border hairline text-muted-foreground",
                 ].join(" ")}
               >
-                {done ?  : labels[i]}
+                {done ? "✓" : labels[i]}
               </span>
               <span className={`text-[10px] uppercase tracking-[0.2em] ${isToday ? "text-court" : "text-muted-foreground"}`}>
                 {isToday ? "today" : labels[i]}

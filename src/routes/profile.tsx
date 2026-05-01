@@ -124,7 +124,7 @@ function ProfilePage() {
         <section className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi label="Latest score" value={last ? `${Math.round(last.overall_score!)}` : "—"}
             hint={prev ? `${trend > 0 ? "+" : ""}${trend.toFixed(1)} vs prev` : undefined}
-            icon={trend > 0 ?  : trend < 0 ?  : } />
+          />
           <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} />
           <Kpi label="Avg. score" value={avg ? avg.toFixed(1) : "—"} />
           <Kpi label="Streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} />
