@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Play, ChevronRight, Flame, Timer, Activity, Sparkles, Upload } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { Play, ChevronRight, Flame, Timer, Activity, Sparkles, Upload, LogOut, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 import sportTennis from "@/assets/sport-tennis.jpg";
 import sportGym from "@/assets/sport-gym.jpg";
@@ -207,12 +208,78 @@ function HomePage() {
 
 /* ---------- pieces ---------- */
 function Avatar() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setEmail(session?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const initial = (email?.[0] || "S").toUpperCase();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
+
   return (
-    <div className="relative">
-      <span className="absolute -inset-0.5 rounded-full court-gradient opacity-50 blur-sm" aria-hidden />
-      <span className="relative grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-medium text-background ring-1 ring-court/40">
-        S
-      </span>
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Account"
+        className="relative block"
+      >
+        <span className="absolute -inset-0.5 rounded-full platinum-gradient opacity-30 blur-sm" aria-hidden />
+        <span className="relative grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-medium text-background">
+          {initial}
+        </span>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border hairline bg-popover shadow-xl">
+          <div className="border-b hairline px-4 py-3">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Signed in</p>
+            <p className="mt-1 truncate text-[13px] text-foreground">{email || "Guest"}</p>
+          </div>
+          <Link
+            to="/profile"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
+          >
+            <User className="h-3.5 w-3.5" /> Profile
+          </Link>
+          {email ? (
+            <button
+              onClick={signOut}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-foreground hover:bg-foreground/5"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
+            >
+              <User className="h-3.5 w-3.5" /> Sign in
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
