@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Award, Flame,
-  Target, Calendar, Activity, Sparkles, ChevronRight,
+  Target, Calendar, Activity, ChevronRight,
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar,
@@ -129,7 +129,7 @@ function ProfilePage() {
           <Kpi label="Latest score" value={last ? `${Math.round(last.overall_score!)}` : "—"}
             hint={prev ? `${trend > 0 ? "+" : ""}${trend.toFixed(1)} vs prev` : undefined}
             icon={trend > 0 ? <TrendingUp className="h-4 w-4" /> : trend < 0 ? <TrendingDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />} />
-          <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} icon={<Sparkles className="h-4 w-4" />} />
+          <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} icon={<Award className="h-4 w-4" />} />
           <Kpi label="Avg. score" value={avg ? avg.toFixed(1) : "—"} icon={<Target className="h-4 w-4" />} />
           <Kpi label="Streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} icon={<Flame className="h-4 w-4" />} />
         </section>

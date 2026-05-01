@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Play, ChevronRight, Flame, Timer, Activity, Sparkles, Upload, LogOut, User } from "lucide-react";
+import { Play, ChevronRight, Flame, Timer, Activity, Target, Upload, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 import sportTennis from "@/assets/sport-tennis.jpg";
@@ -111,7 +111,7 @@ function HomePage() {
                       { i: <Flame className="h-4 w-4" />, t: "Warm-up", d: "Mobility · 10 min" },
                       { i: <Activity className="h-4 w-4" />, t: "Footwork ladder", d: "Lateral · 15 min" },
                       { i: <Timer className="h-4 w-4" />, t: "Crosscourt rally", d: "20-ball sets · 30 min" },
-                      { i: <Sparkles className="h-4 w-4" />, t: "Serve placement", d: "Wide / T / body · 15 min" },
+                      { i: <Target className="h-4 w-4" />, t: "Serve placement", d: "Wide / T / body · 15 min" },
                     ].map((b) => (
                       <li key={b.t} className="flex items-center gap-4 py-3.5">
                         <span className="grid h-9 w-9 place-items-center rounded-full border hairline text-court">

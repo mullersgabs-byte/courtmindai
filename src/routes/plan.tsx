@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
-  ArrowLeft, Sparkles, Loader2, Flame, Timer, Activity, Check,
+  ArrowLeft, Loader2, Flame, Timer, Activity, Check,
   CalendarDays, ChevronRight, Target, RefreshCw, TrendingUp, Play, Trophy, Zap, Layers,
 } from "lucide-react";
 import { generatePlan, type WeeklyPlan, type DayPlan } from "@/server/plan.functions";
@@ -178,7 +178,7 @@ function PlanPage() {
               ) : plan ? (
                 <><RefreshCw className="h-4 w-4" /> Regenerate plan</>
               ) : (
-                <><Sparkles className="h-4 w-4" /> Generate plan</>
+                <><Zap className="h-4 w-4" /> Generate plan</>
               )}
             </button>
 
@@ -283,7 +283,7 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
     <div className="overflow-hidden rounded-3xl border hairline bg-card p-7 sm:p-9">
       <div className="flex items-center gap-3">
         <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-          <Sparkles className="h-4 w-4" />
+          <Activity className="h-4 w-4" />
         </span>
         <p className="text-[11px] uppercase tracking-[0.24em] text-court">{plan.sport} · {plan.level}</p>
       </div>

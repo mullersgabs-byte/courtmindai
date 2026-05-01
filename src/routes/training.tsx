@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, Play, Check, Flame, Timer, Activity, Undo2,
-  TrendingUp, ChevronRight, Calendar as CalendarIcon, Sparkles,
+  TrendingUp, ChevronRight, Calendar as CalendarIcon,
 } from "lucide-react";
 import sportTennis from "@/assets/sport-tennis.jpg";
 import sportGym from "@/assets/sport-gym.jpg";
@@ -238,7 +238,7 @@ function TrainingPage() {
         <section className="mt-14 overflow-hidden rounded-2xl border hairline bg-card p-7">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-              <Sparkles className="h-4 w-4" />
+              <Activity className="h-4 w-4" />
             </span>
             <p className="text-[11px] uppercase tracking-[0.24em] text-court">Coach note</p>
           </div>
