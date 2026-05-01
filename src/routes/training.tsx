@@ -80,6 +80,7 @@ function writeHistory(h: WorkoutEntry[]) {
 function TrainingPage() {
   const [tab, setTab] = useState<"all" | "done" | "today" | "upcoming">("all");
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const [logTarget, setLogTarget] = useState<Session | null>(null);
 
   // Hydrate persisted status on mount.
   useEffect(() => {
@@ -92,16 +93,23 @@ function TrainingPage() {
   const completeSession = (id: string) => {
     const target = sessions.find((s) => s.id === id);
     if (!target || target.status === "done") return;
+    // Open the session log modal — actual completion happens after RPE/notes.
+    setLogTarget(target);
+  };
 
+  const finalizeSession = (
+    target: Session,
+    payload: { actualMinutes: number; rpe: number; notes: string },
+  ) => {
     const logId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     // 1. update session list
-    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, status: "done" } : s)));
+    setSessions((prev) => prev.map((s) => (s.id === target.id ? { ...s, status: "done" } : s)));
 
     // 2. persist status
     const stored = readStatus();
-    stored[id] = { status: "done", completedAt: now, logId };
+    stored[target.id] = { status: "done", completedAt: now, logId };
     writeStatus(stored);
 
     // 3. add to shared workout history (drives /profile + /history charts)
@@ -111,10 +119,25 @@ function TrainingPage() {
       date: now,
       title: target.title,
       sport: target.sport,
-      durationMinutes: target.durationMinutes,
+      durationMinutes: payload.actualMinutes,
       intensity: target.intensity,
+      note: payload.notes || undefined,
     });
     writeHistory(history);
+
+    // 4. add a structured session log used by /plan to generate better plans
+    const log: SessionLog = {
+      id: logId,
+      date: now,
+      title: target.title,
+      sport: target.sport,
+      plannedMinutes: target.durationMinutes,
+      actualMinutes: payload.actualMinutes,
+      rpe: payload.rpe,
+      notes: payload.notes || undefined,
+    };
+    addSessionLog(log);
+    setLogTarget(null);
   };
 
   const undoSession = (id: string) => {
@@ -251,6 +274,14 @@ function TrainingPage() {
           </p>
         </section>
       </main>
+
+      {logTarget && (
+        <SessionLogModal
+          session={logTarget}
+          onClose={() => setLogTarget(null)}
+          onSave={(payload) => finalizeSession(logTarget, payload)}
+        />
+      )}
     </div>
   );
 }
