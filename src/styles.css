@@ -37,8 +37,8 @@
   --color-ring: var(--ring);
   --color-ink: var(--ink);
   --color-bone: var(--bone);
-  --color-gold: var(--gold);
-  --color-gold-soft: var(--gold-soft);
+  --color-platinum: var(--platinum);
+  --color-platinum-soft: var(--platinum-soft);
   --font-display: "Inter", system-ui, sans-serif;
   --font-serif: "Instrument Serif", "Times New Roman", serif;
 }
@@ -46,11 +46,11 @@
 :root {
   --radius: 0.875rem;
 
-  /* Elite palette */
+  /* Elite monochrome palette — black + soft white + platinum */
   --ink: oklch(0.16 0.005 80);            /* #0B0B0B soft black */
   --bone: oklch(0.965 0.004 80);          /* #F5F5F5 soft white */
-  --gold: oklch(0.78 0.09 80);            /* #C6A962 muted gold */
-  --gold-soft: oklch(0.86 0.06 80);
+  --platinum: oklch(0.92 0 0);            /* cool neutral highlight */
+  --platinum-soft: oklch(0.82 0 0);       /* muted silver */
 
   --background: var(--ink);
   --foreground: var(--bone);
@@ -64,13 +64,13 @@
   --secondary-foreground: var(--bone);
   --muted: oklch(0.24 0.005 80);
   --muted-foreground: oklch(0.66 0.006 80);
-  --accent: var(--gold);
+  --accent: var(--bone);
   --accent-foreground: var(--ink);
   --destructive: oklch(0.62 0.18 28);
   --destructive-foreground: var(--bone);
   --border: oklch(1 0 0 / 0.08);
   --input: oklch(1 0 0 / 0.12);
-  --ring: var(--gold);
+  --ring: var(--platinum);
 }
 
 @layer base {
@@ -84,7 +84,7 @@
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 { letter-spacing: -0.035em; }
-  ::selection { background: var(--gold); color: var(--ink); }
+  ::selection { background: var(--bone); color: var(--ink); }
 }
 
 @layer utilities {
@@ -93,10 +93,10 @@
   .font-serif { font-family: var(--font-serif); }
   .hairline { border-color: oklch(1 0 0 / 0.08); }
   .hairline-strong { border-color: oklch(1 0 0 / 0.18); }
-  .text-gold { color: var(--gold); }
-  .bg-gold { background-color: var(--gold); }
-  .border-gold { border-color: var(--gold); }
-  .ring-gold { box-shadow: 0 0 0 1px var(--gold); }
+  .text-platinum { color: var(--platinum); }
+  .bg-platinum { background-color: var(--platinum); }
+  .border-platinum { border-color: var(--platinum); }
+  .ring-platinum { box-shadow: 0 0 0 1px var(--platinum); }
   .glass {
     background-color: oklch(0.21 0.005 80 / 0.6);
     backdrop-filter: blur(20px) saturate(140%);
@@ -106,17 +106,17 @@
     background-image: radial-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px);
     background-size: 4px 4px;
   }
-  .gold-gradient {
-    background: linear-gradient(135deg, oklch(0.86 0.06 80) 0%, oklch(0.78 0.09 80) 50%, oklch(0.65 0.08 75) 100%);
+  .platinum-gradient {
+    background: linear-gradient(135deg, oklch(0.98 0 0) 0%, oklch(0.9 0 0) 50%, oklch(0.74 0 0) 100%);
   }
-  .text-gold-gradient {
-    background: linear-gradient(135deg, oklch(0.92 0.05 80) 0%, oklch(0.78 0.09 80) 50%, oklch(0.7 0.08 75) 100%);
+  .text-platinum-gradient {
+    background: linear-gradient(135deg, oklch(0.99 0 0) 0%, oklch(0.9 0 0) 50%, oklch(0.72 0 0) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-  .glow-gold {
-    box-shadow: 0 0 0 1px oklch(0.78 0.09 80 / 0.3), 0 8px 40px oklch(0.78 0.09 80 / 0.15);
+  .glow-soft {
+    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.18), 0 8px 40px oklch(1 0 0 / 0.08);
   }
 }
 
@@ -134,16 +134,16 @@
   100% { background-position: 800px 0; }
 }
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, oklch(0.78 0.09 80 / 0.25), transparent);
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.18), transparent);
   background-size: 800px 100%;
   animation: shimmer 2s infinite;
 }
 
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.78 0.09 80 / 0.4); }
-  50% { box-shadow: 0 0 0 8px oklch(0.78 0.09 80 / 0); }
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(1 0 0 / 0.35); }
+  50% { box-shadow: 0 0 0 8px oklch(1 0 0 / 0); }
 }
-.animate-pulse-gold { animation: pulse-gold 2s ease-out infinite; }
+.animate-pulse-soft { animation: pulse-soft 2s ease-out infinite; }
 
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .animate-ticker { animation: ticker 60s linear infinite; }

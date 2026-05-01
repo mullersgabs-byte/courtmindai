@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, ArrowRight, Play } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Today — CourtMind" }] }),
@@ -7,11 +8,16 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const [today, setToday] = useState("");
+  useEffect(() => {
+    setToday(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
@@ -29,7 +35,7 @@ function Dashboard() {
             <a className="transition hover:text-foreground" href="#">Archive</a>
           </nav>
           <div className="flex items-center gap-3">
-            <span className="hidden text-[12px] text-muted-foreground sm:inline">{today}</span>
+            <span suppressHydrationWarning className="hidden text-[12px] text-muted-foreground sm:inline">{today}</span>
             <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-medium text-background">
               S
             </span>
