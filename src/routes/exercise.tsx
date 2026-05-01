@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Play, Timer, Flame, Target, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Play, Pause, Timer, Flame, Target, ChevronRight, RotateCcw, SkipForward, Check } from "lucide-react";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
 export const Route = createFileRoute("/exercise")({
@@ -12,7 +13,85 @@ export const Route = createFileRoute("/exercise")({
   component: ExercisePage,
 });
 
+/* ---------- Workout config ---------- */
+const TOTAL_SETS = 4;
+const WORK_SECONDS = 30;
+const REST_SECONDS = 15;
+const PREP_SECONDS = 5;
+
+type Phase = "idle" | "prep" | "work" | "rest" | "done";
+
 function ExercisePage() {
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [setIdx, setSetIdx] = useState(1); // 1-based
+  const [remaining, setRemaining] = useState(PREP_SECONDS);
+  const [running, setRunning] = useState(false);
+  const phaseRef = useRef<Phase>("idle");
+  const setRef = useRef(1);
+
+  // keep refs in sync for the interval closure
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { setRef.current = setIdx; }, [setIdx]);
+
+  // tick
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => {
+      setRemaining((r) => {
+        if (r > 1) return r - 1;
+        // transition
+        const p = phaseRef.current;
+        if (p === "prep") {
+          setPhase("work");
+          return WORK_SECONDS;
+        }
+        if (p === "work") {
+          if (setRef.current >= TOTAL_SETS) {
+            setPhase("done");
+            setRunning(false);
+            return 0;
+          }
+          setPhase("rest");
+          return REST_SECONDS;
+        }
+        if (p === "rest") {
+          setSetIdx((s) => s + 1);
+          setPhase("work");
+          return WORK_SECONDS;
+        }
+        return 0;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [running]);
+
+  const start = () => {
+    if (phase === "idle" || phase === "done") {
+      setSetIdx(1);
+      setPhase("prep");
+      setRemaining(PREP_SECONDS);
+    }
+    setRunning(true);
+  };
+  const pause = () => setRunning(false);
+  const reset = () => {
+    setRunning(false);
+    setPhase("idle");
+    setSetIdx(1);
+    setRemaining(PREP_SECONDS);
+  };
+  const skip = () => {
+    // jump to next phase boundary
+    setRemaining(1);
+  };
+
+  const isActive = phase !== "idle" && phase !== "done";
+  const totalForPhase =
+    phase === "prep" ? PREP_SECONDS :
+    phase === "work" ? WORK_SECONDS :
+    phase === "rest" ? REST_SECONDS : PREP_SECONDS;
+  const progress = isActive ? 1 - remaining / totalForPhase : phase === "done" ? 1 : 0;
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground antialiased">
       {/* ambient backdrop */}
@@ -48,21 +127,23 @@ function ExercisePage() {
 
           {/* meta row */}
           <ul className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10">
-            <Meta icon={<Timer className="h-4 w-4" />} label="Duration" value="4 × 30s" />
+            <Meta icon={<Timer className="h-4 w-4" />} label="Duration" value={`${TOTAL_SETS} × ${WORK_SECONDS}s`} />
             <Meta icon={<Flame className="h-4 w-4" />} label="Intensity" value="High" />
             <Meta icon={<Target className="h-4 w-4" />} label="Focus" value="Reaction" />
           </ul>
 
-          {/* primary CTA */}
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <button className="group inline-flex items-center gap-3 rounded-full bg-court px-7 py-4 text-[15px] font-medium text-ink transition hover:opacity-90 glow-court animate-pulse-court">
-              <Play className="h-4 w-4 fill-ink" /> Start
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-full border hairline px-5 py-3.5 text-[13px] text-foreground/85 transition hover:border-court/40 hover:text-foreground">
-              Preview · 12s
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          {/* Execution mode — timer & controls */}
+          <TimerPanel
+            phase={phase}
+            setIdx={setIdx}
+            remaining={remaining}
+            progress={progress}
+            running={running}
+            onStart={start}
+            onPause={pause}
+            onReset={reset}
+            onSkip={skip}
+          />
 
           {/* steps */}
           <ol className="mt-10 divide-y hairline border-y hairline">
@@ -97,6 +178,133 @@ function Meta({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <p className="mt-3 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-[15px] font-medium tracking-tight">{value}</p>
     </li>
+  );
+}
+
+/* ---------- Timer execution panel ---------- */
+function TimerPanel({
+  phase, setIdx, remaining, progress, running,
+  onStart, onPause, onReset, onSkip,
+}: {
+  phase: Phase; setIdx: number; remaining: number; progress: number; running: boolean;
+  onStart: () => void; onPause: () => void; onReset: () => void; onSkip: () => void;
+}) {
+  const phaseLabel =
+    phase === "idle" ? "Ready" :
+    phase === "prep" ? "Get ready" :
+    phase === "work" ? "Work" :
+    phase === "rest" ? "Rest" : "Complete";
+
+  // SVG ring geometry
+  const size = 220;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = c * (1 - progress);
+
+  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const ss = String(remaining % 60).padStart(2, "0");
+
+  return (
+    <div className="mt-10 overflow-hidden rounded-3xl border hairline bg-card p-7">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Execution mode</p>
+        <p className="text-[11px] uppercase tracking-[0.24em] text-court">
+          Set {Math.min(setIdx, TOTAL_SETS)} / {TOTAL_SETS}
+        </p>
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
+        {/* ring */}
+        <div className="relative" style={{ width: size, height: size }}>
+          <svg width={size} height={size} className="-rotate-90">
+            <circle
+              cx={size / 2} cy={size / 2} r={r}
+              fill="none" stroke="currentColor"
+              className="text-foreground/10" strokeWidth={stroke}
+            />
+            <circle
+              cx={size / 2} cy={size / 2} r={r}
+              fill="none" stroke="currentColor"
+              className={
+                phase === "rest" ? "text-muted-foreground" :
+                phase === "done" ? "text-court" :
+                "text-foreground"
+              }
+              strokeWidth={stroke} strokeLinecap="round"
+              strokeDasharray={c} strokeDashoffset={dash}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{phaseLabel}</p>
+            {phase === "done" ? (
+              <div className="mt-1 grid h-12 w-12 place-items-center rounded-full bg-foreground text-background">
+                <Check className="h-5 w-5" />
+              </div>
+            ) : (
+              <p className="mt-1 font-serif text-[clamp(2.6rem,5vw,3.4rem)] tabular-nums leading-none tracking-tight">
+                {mm}:{ss}
+              </p>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {phase === "idle" ? `${TOTAL_SETS} sets · ${WORK_SECONDS}s work / ${REST_SECONDS}s rest`
+               : phase === "done" ? "Workout complete"
+               : `${WORK_SECONDS}s work · ${REST_SECONDS}s rest`}
+            </p>
+          </div>
+        </div>
+
+        {/* controls */}
+        <div className="flex flex-1 flex-col gap-3 sm:max-w-[220px]">
+          {!running ? (
+            <button
+              onClick={onStart}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
+            >
+              <Play className="h-4 w-4" />
+              {phase === "idle" ? "Start" : phase === "done" ? "Restart" : "Resume"}
+            </button>
+          ) : (
+            <button
+              onClick={onPause}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
+            >
+              <Pause className="h-4 w-4" /> Pause
+            </button>
+          )}
+          <button
+            onClick={onSkip}
+            disabled={!running || phase === "done"}
+            className="inline-flex items-center justify-center gap-2 rounded-full border hairline px-6 py-3 text-[13px] text-foreground/85 transition hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
+          >
+            <SkipForward className="h-4 w-4" /> Skip phase
+          </button>
+          <button
+            onClick={onReset}
+            className="inline-flex items-center justify-center gap-2 rounded-full border hairline px-6 py-3 text-[13px] text-muted-foreground transition hover:text-foreground"
+          >
+            <RotateCcw className="h-4 w-4" /> Reset
+          </button>
+        </div>
+      </div>
+
+      {/* set indicators */}
+      <div className="mt-7 flex items-center gap-1.5">
+        {Array.from({ length: TOTAL_SETS }).map((_, i) => {
+          const completed = i + 1 < setIdx || phase === "done";
+          const active = i + 1 === setIdx && phase !== "idle" && phase !== "done";
+          return (
+            <span
+              key={i}
+              className={`h-1 flex-1 rounded-full ${
+                completed ? "bg-foreground" : active ? "bg-foreground/60" : "bg-foreground/15"
+              }`}
+            />
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Sparkles, Target, Activity } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Target, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -157,7 +157,7 @@ function SportStep({ value, onChange }: { value: string; onChange: (s: string) =
   return (
     <section>
       <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
-        <Sparkles className="mr-2 inline h-3 w-3" /> Discipline
+        <Activity className="mr-2 inline h-3 w-3" /> Discipline
       </p>
       <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
         What do you <span className="font-serif italic font-normal text-court-gradient">train?</span>

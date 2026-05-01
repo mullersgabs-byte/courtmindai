@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
-  Upload, ArrowLeft, Play, Pause, Sparkles, Check,
+  Upload, ArrowLeft, Play, Pause, Check,
   CheckCircle2, AlertTriangle, XCircle, Loader2, ChevronRight,
   Film, Gauge,
 } from "lucide-react";
@@ -365,7 +365,7 @@ function ResultView({
             Your video
           </div>
           <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-[11px] text-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-court" />
+            <Gauge className="h-3.5 w-3.5 text-court" />
             Analysed by AI
           </div>
 
