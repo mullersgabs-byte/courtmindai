@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Today — CourtMind" }] }),
@@ -28,12 +29,13 @@ function Dashboard() {
             CourtMind
           </Link>
           <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
-            <a className="text-foreground" href="#">Today</a>
-            <a className="transition hover:text-foreground" href="#">Plan</a>
-            <a className="transition hover:text-foreground" href="#">Sessions</a>
-            <a className="transition hover:text-foreground" href="#">Archive</a>
+            <Link to="/home" className="text-foreground">Today</Link>
+            <Link to="/plan" className="transition hover:text-foreground">Plan</Link>
+            <Link to="/training" className="transition hover:text-foreground">Sessions</Link>
+            <Link to="/history" className="transition hover:text-foreground">Archive</Link>
           </nav>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <span suppressHydrationWarning className="hidden text-[12px] text-muted-foreground sm:inline">{today}</span>
             <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-medium text-background">
               S
@@ -57,10 +59,12 @@ function Dashboard() {
               Your last session showed measurable improvement in baseline consistency.
               Today's plan deepens that gain — without overreaching.
             </p>
-            <button className="group inline-flex items-center gap-3 rounded-full bg-foreground px-6 py-4 text-[14px] font-medium text-background transition hover:opacity-90">
-              
+            <Link
+              to="/training"
+              className="group inline-flex items-center gap-3 rounded-full bg-foreground px-6 py-4 text-[14px] font-medium text-background transition hover:opacity-90"
+            >
               Start training
-            </button>
+            </Link>
           </div>
         </section>
 
@@ -148,9 +152,9 @@ function Dashboard() {
                 A composed view of <span className="font-serif italic">the last week.</span>
               </h2>
             </div>
-            <a href="#" className="hidden text-[13px] text-muted-foreground transition hover:text-foreground sm:inline">
+            <Link to="/history" className="hidden text-[13px] text-muted-foreground transition hover:text-foreground sm:inline">
               View archive →
-            </a>
+            </Link>
           </div>
 
           <ul className="divide-y hairline border-y hairline">

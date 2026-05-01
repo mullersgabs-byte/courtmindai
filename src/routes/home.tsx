@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 import sportTennis from "@/assets/sport-tennis.jpg";
 import sportGym from "@/assets/sport-gym.jpg";
@@ -46,6 +47,7 @@ function HomePage() {
             <Link to="/profile" className="transition hover:text-foreground">Profile</Link>
           </nav>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Avatar />
           </div>
         </div>
@@ -144,7 +146,7 @@ function HomePage() {
         <section className="pb-16">
           <div className="flex items-end justify-between">
             <SectionLabel>Continue where you left off</SectionLabel>
-            <a href="#" className="text-[12px] text-muted-foreground transition hover:text-foreground">View all →</a>
+            <Link to="/training" className="text-[12px] text-muted-foreground transition hover:text-foreground">View all →</Link>
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -161,7 +163,7 @@ function HomePage() {
         <section className="pb-16">
           <div className="flex items-end justify-between">
             <SectionLabel>Recommended programs</SectionLabel>
-            <a href="#" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</a>
+            <Link to="/plan" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</Link>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <ProgramCard img={sportTennis} tag="Tennis" t="Elite Baseline" w="6 weeks" />
@@ -310,8 +312,8 @@ function ProgressLine({ value, label }: { value: number; label: string }) {
 
 function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: number }) {
   return (
-    <a
-      href="#"
+    <Link
+      to="/training"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court"
     >
       <div className="relative aspect-[4/5] overflow-hidden">
@@ -328,14 +330,14 @@ function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: 
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; w: string }) {
   return (
-    <a
-      href="#"
+    <Link
+      to="/plan"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:-translate-y-0.5 hover:glow-court"
     >
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -349,13 +351,13 @@ function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; 
           <p className="mt-0.5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{w}</p>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function AestheticCard({ img, title, meta }: { img: string; title: string; meta: string }) {
   return (
-    <a href="#" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
+    <Link to="/history" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
       <div className="relative aspect-[5/4] overflow-hidden">
         <img src={img} alt={title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
       </div>
@@ -363,6 +365,6 @@ function AestheticCard({ img, title, meta }: { img: string; title: string; meta:
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{meta}</p>
         <p className="mt-2 text-[16px] font-medium tracking-tight">{title}</p>
       </div>
-    </a>
+    </Link>
   );
 }
