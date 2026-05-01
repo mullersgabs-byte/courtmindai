@@ -426,3 +426,298 @@ function Block({ label, icon, children }: { label: string; icon: React.ReactNode
     </div>
   );
 }
+
+/* ---------- Up next + estimated progress ---------- */
+function NextUpAndProgress({
+  sport,
+  level,
+  plan,
+}: {
+  sport: string;
+  level: "beginner" | "intermediate" | "advanced";
+  plan: WeeklyPlan | null;
+}) {
+  // Pick "next" training day from the plan if available, otherwise show a placeholder.
+  const nextDay =
+    plan?.days.find((d) => d.type === "training") ?? null;
+
+  // Locally-tracked weekly check-ins (frontend only) for an honest progress estimate.
+  const [done, setDone] = useState(0);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("courtmind.progress.v1");
+      if (raw) setDone(Math.max(0, Math.min(7, Number(JSON.parse(raw).done) || 0)));
+    } catch {}
+  }, []);
+  const target = plan?.days.filter((d) => d.type === "training").length || 4;
+  const completion = Math.min(100, Math.round((done / Math.max(1, target)) * 100));
+
+  // Estimated weeks to next milestone — simple heuristic by level.
+  const weeksToMilestone =
+    level === "beginner" ? 8 : level === "intermediate" ? 6 : 4;
+  const milestone =
+    level === "beginner"
+      ? "Intermediate base"
+      : level === "intermediate"
+      ? "Advanced conditioning"
+      : "Peak performance block";
+
+  const markSession = () => {
+    const next = Math.min(target, done + 1);
+    setDone(next);
+    try {
+      localStorage.setItem("courtmind.progress.v1", JSON.stringify({ done: next }));
+    } catch {}
+  };
+
+  return (
+    <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+      {/* Up next */}
+      <div className="rounded-3xl border hairline bg-card p-6 sm:p-8">
+        <div className="flex items-center justify-between">
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            <Zap className="h-3.5 w-3.5" /> Up next
+          </p>
+          <span className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            {sport}
+          </span>
+        </div>
+
+        <h2 className="mt-4 text-balance text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">
+          {nextDay ? (
+            <>
+              {nextDay.day} ·{" "}
+              <span className="font-serif italic text-platinum-gradient">
+                {nextDay.title}
+              </span>
+            </>
+          ) : (
+            <>
+              Generate your week to see{" "}
+              <span className="font-serif italic text-platinum-gradient">
+                what's next.
+              </span>
+            </>
+          )}
+        </h2>
+
+        {nextDay ? (
+          <>
+            <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Timer className="h-3.5 w-3.5" /> {nextDay.durationMinutes} min
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Flame className="h-3.5 w-3.5" /> {nextDay.intensity} intensity
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" /> {nextDay.exercises.length} exercises
+              </span>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={markSession}
+                className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-[13px] font-medium text-background transition hover:opacity-90"
+              >
+                <Play className="h-4 w-4" /> Start session
+              </button>
+              <button
+                type="button"
+                onClick={markSession}
+                className="inline-flex items-center gap-2 rounded-full border hairline px-5 py-3 text-[13px] text-foreground transition hover:bg-foreground/5"
+              >
+                <Check className="h-4 w-4" /> Mark as done
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+            Configure your sport and intent below, hit generate, and we'll surface
+            the next session here automatically.
+          </p>
+        )}
+      </div>
+
+      {/* Estimated progress */}
+      <div className="rounded-3xl border hairline bg-card p-6 sm:p-8">
+        <div className="flex items-center justify-between">
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            <TrendingUp className="h-3.5 w-3.5" /> Estimated progress
+          </p>
+          <span className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            This week
+          </span>
+        </div>
+
+        <div className="mt-6 flex items-end justify-between gap-3">
+          <p className="text-[clamp(2.4rem,4vw,3.4rem)] font-medium leading-none tracking-[-0.04em]">
+            {completion}
+            <span className="text-[40%] text-muted-foreground">%</span>
+          </p>
+          <p className="text-right text-[12px] text-muted-foreground">
+            {done} / {target}
+            <br />
+            sessions
+          </p>
+        </div>
+
+        <div className="mt-4 h-[6px] w-full overflow-hidden rounded-full bg-foreground/10">
+          <div
+            className="h-full rounded-full bg-foreground transition-all duration-700"
+            style={{ width: `${completion}%` }}
+          />
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10">
+          <div className="bg-card p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              Next milestone
+            </p>
+            <p className="mt-2 text-[14px] font-medium tracking-tight">{milestone}</p>
+          </div>
+          <div className="bg-card p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              Estimated
+            </p>
+            <p className="mt-2 text-[14px] font-medium tracking-tight">
+              ~{weeksToMilestone} weeks
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Recommended programs ---------- */
+type Program = {
+  id: string;
+  title: string;
+  weeks: number;
+  sessionsPerWeek: number;
+  level: "beginner" | "intermediate" | "advanced" | "all";
+  tag: string;
+  blurb: string;
+};
+
+const PROGRAMS_BY_SPORT: Record<string, Program[]> = {
+  Tennis: [
+    { id: "t1", title: "Baseline foundations", weeks: 6, sessionsPerWeek: 4, level: "beginner", tag: "Technique", blurb: "Groundstroke consistency, footwork patterns and serve mechanics." },
+    { id: "t2", title: "Match-ready conditioning", weeks: 8, sessionsPerWeek: 5, level: "intermediate", tag: "Performance", blurb: "Power, agility and tactical drills built around real match demands." },
+    { id: "t3", title: "Tournament peak block", weeks: 4, sessionsPerWeek: 6, level: "advanced", tag: "Peak", blurb: "Sharpening serve, return and recovery for competition weeks." },
+  ],
+  Volleyball: [
+    { id: "v1", title: "Vertical jump program", weeks: 8, sessionsPerWeek: 4, level: "all", tag: "Power", blurb: "Plyometrics, posterior chain and landing mechanics for higher jumps." },
+    { id: "v2", title: "Attacker fundamentals", weeks: 6, sessionsPerWeek: 4, level: "intermediate", tag: "Technique", blurb: "Approach, arm swing and shoulder durability for cleaner spikes." },
+    { id: "v3", title: "Defensive specialist", weeks: 6, sessionsPerWeek: 3, level: "intermediate", tag: "Reactivity", blurb: "Reaction, platform control and read-defense drills." },
+  ],
+  Running: [
+    { id: "r1", title: "5K progression", weeks: 8, sessionsPerWeek: 4, level: "beginner", tag: "Endurance", blurb: "Easy base, tempo work and one quality session per week." },
+    { id: "r2", title: "Half-marathon build", weeks: 12, sessionsPerWeek: 5, level: "intermediate", tag: "Endurance", blurb: "Threshold, long runs and strength to keep form under fatigue." },
+    { id: "r3", title: "Speed & VO₂ block", weeks: 6, sessionsPerWeek: 5, level: "advanced", tag: "Performance", blurb: "Intervals, hill repeats and neuromuscular work for top-end speed." },
+  ],
+  Strength: [
+    { id: "s1", title: "Hypertrophy foundations", weeks: 8, sessionsPerWeek: 4, level: "beginner", tag: "Volume", blurb: "Compound lifts, accessories and progressive overload basics." },
+    { id: "s2", title: "Powerbuilding", weeks: 10, sessionsPerWeek: 4, level: "intermediate", tag: "Performance", blurb: "Heavy main lifts, hypertrophy accessories and athletic conditioning." },
+    { id: "s3", title: "Peak strength", weeks: 6, sessionsPerWeek: 4, level: "advanced", tag: "Peak", blurb: "Intensity blocks targeting one-rep max progress with smart deloads." },
+  ],
+};
+
+const DEFAULT_PROGRAMS: Program[] = [
+  { id: "d1", title: "Athletic base builder", weeks: 6, sessionsPerWeek: 4, level: "beginner", tag: "Foundation", blurb: "General athleticism, mobility and aerobic base for any sport." },
+  { id: "d2", title: "Sport-specific conditioning", weeks: 8, sessionsPerWeek: 4, level: "intermediate", tag: "Performance", blurb: "Power, agility and capacity tailored to your discipline." },
+  { id: "d3", title: "Recovery & longevity", weeks: 4, sessionsPerWeek: 3, level: "all", tag: "Recovery", blurb: "Mobility, soft-tissue work and easy aerobic flushes." },
+];
+
+function RecommendedPrograms({
+  sport,
+  level,
+}: {
+  sport: string;
+  level: "beginner" | "intermediate" | "advanced";
+}) {
+  const list = (PROGRAMS_BY_SPORT[sport] ?? DEFAULT_PROGRAMS)
+    .slice()
+    .sort((a, b) => {
+      const score = (p: Program) => (p.level === level ? 0 : p.level === "all" ? 1 : 2);
+      return score(a) - score(b);
+    });
+
+  return (
+    <section className="mt-12">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            <Trophy className="h-3.5 w-3.5" /> Recommended programs
+          </p>
+          <h2 className="mt-3 text-balance text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">
+            Multi-week paths for{" "}
+            <span className="font-serif italic text-platinum-gradient">{sport}.</span>
+          </h2>
+        </div>
+        <p className="hidden text-right text-[12px] text-muted-foreground sm:block">
+          Tailored to <span className="text-foreground">{level}</span> level
+        </p>
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {list.map((p) => (
+          <ProgramCard key={p.id} program={p} highlighted={p.level === level} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProgramCard({ program, highlighted }: { program: Program; highlighted: boolean }) {
+  const totalSessions = program.weeks * program.sessionsPerWeek;
+  return (
+    <div
+      className={[
+        "group relative flex h-full flex-col rounded-3xl border bg-card p-6 transition",
+        highlighted ? "border-foreground/30 glow-soft" : "hairline hover:border-foreground/20",
+      ].join(" ")}
+    >
+      <div className="flex items-center justify-between">
+        <span className="rounded-full border hairline px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          {program.tag}
+        </span>
+        {highlighted && (
+          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/80">
+            Recommended
+          </span>
+        )}
+      </div>
+
+      <h3 className="mt-5 text-[clamp(1.2rem,1.6vw,1.4rem)] font-medium leading-tight tracking-tight">
+        {program.title}
+      </h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+        {program.blurb}
+      </p>
+
+      <div className="mt-6 grid grid-cols-3 gap-2 border-t hairline pt-4 text-center">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Weeks</p>
+          <p className="mt-1 text-[15px] font-medium">{program.weeks}</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Per week</p>
+          <p className="mt-1 text-[15px] font-medium">{program.sessionsPerWeek}×</p>
+        </div>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Total</p>
+          <p className="mt-1 text-[15px] font-medium">{totalSessions}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border hairline px-4 py-2.5 text-[13px] text-foreground transition group-hover:bg-foreground group-hover:text-background"
+      >
+        Start program <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
