@@ -318,7 +318,7 @@ function Footer() {
           </p>
         </div>
 
-        <FooterCol title="System" links={["Method", "Capabilities", "Disciplines", "Membership"]} />
+        <FooterCol title="System" links={["Method", "Capabilities", "Disciplines"]} />
         <FooterCol title="Company" links={["About", "Journal", "Contact", "Press"]} />
         <FooterCol title="Legal" links={["Privacy", "Terms", "Cookies"]} />
       </div>
