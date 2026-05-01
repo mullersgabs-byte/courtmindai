@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analyses: {
+        Row: {
+          created_at: string
+          error: string | null
+          events: Json | null
+          id: string
+          overall_score: number | null
+          raw: Json | null
+          status: string
+          updated_at: string
+          verdict: string | null
+          video_path: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          events?: Json | null
+          id?: string
+          overall_score?: number | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          verdict?: string | null
+          video_path: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          events?: Json | null
+          id?: string
+          overall_score?: number | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          verdict?: string | null
+          video_path?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
