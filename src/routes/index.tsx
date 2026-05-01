@@ -286,22 +286,23 @@ function Disciplines() {
 /* ---------------- Pricing ---------------- */
 /* ---------------- Closing ---------------- */
 function Closing() {
+  const { t } = useT();
   return (
     <section className="mx-auto max-w-[1400px] px-8 pb-32">
       <div className="border-t hairline pt-20">
         <h2 className="text-balance text-[clamp(2.5rem,7vw,7rem)] font-medium leading-[0.95] tracking-[-0.04em]">
-          Stop guessing.<br />
-          <span className="font-serif italic font-normal">Start improving.</span>
+          {t("landing.closing.title.a")}<br />
+          <span className="font-serif italic font-normal">{t("landing.closing.title.b")}</span>
         </h2>
         <div className="mt-12 flex flex-wrap items-center gap-6">
           <Link
             to="/onboarding"
             className="group inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-4 text-[14px] font-medium text-background transition hover:opacity-90"
           >
-            Start your assessment
+            {t("landing.cta.start")}
             
           </Link>
-          <p className="text-[13px] text-muted-foreground">No credit card. Two minutes.</p>
+          <p className="text-[13px] text-muted-foreground">{t("landing.closing.note")}</p>
         </div>
       </div>
     </section>
@@ -345,7 +346,7 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
       <ul className="mt-6 space-y-3 text-[13px]">
         {links.map((l) => (
           <li key={l}>
-            <a href="#" className="text-foreground/80 transition hover:text-foreground">{l}</a>
+            <span className="text-foreground/60">{l}</span>
           </li>
         ))}
       </ul>
