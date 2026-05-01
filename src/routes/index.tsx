@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,6 +33,7 @@ function Index() {
 
 /* ---------------- Nav ---------------- */
 function Nav() {
+  const { t } = useT();
   return (
     <header className="sticky top-0 z-50 border-b hairline bg-background/70 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-8 py-5">
@@ -39,19 +42,20 @@ function Nav() {
           CourtMind
         </Link>
         <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
-          <a href="#method" className="transition hover:text-foreground">Method</a>
-          <a href="#capabilities" className="transition hover:text-foreground">Capabilities</a>
-          <a href="#disciplines" className="transition hover:text-foreground">Disciplines</a>
+          <a href="#method" className="transition hover:text-foreground">{t("nav.method")}</a>
+          <a href="#capabilities" className="transition hover:text-foreground">{t("nav.capabilities")}</a>
+          <a href="#disciplines" className="transition hover:text-foreground">{t("nav.disciplines")}</a>
         </nav>
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           <Link to="/auth" className="hidden text-[13px] text-muted-foreground transition hover:text-foreground sm:inline">
-            Sign in
+            {t("nav.signin")}
           </Link>
           <Link
             to="/auth"
             className="group inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition hover:opacity-90"
           >
-            Begin
+            {t("nav.begin")}
             
           </Link>
         </div>
@@ -62,6 +66,7 @@ function Nav() {
 
 /* ---------------- Hero ---------------- */
 function Hero() {
+  const { t } = useT();
   return (
     <section className="relative overflow-hidden">
       <div className="grain absolute inset-0 opacity-70" aria-hidden />
@@ -69,18 +74,18 @@ function Hero() {
         <div className="animate-float-up">
           <p className="mb-10 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
             <span className="block h-px w-8 bg-foreground/30" />
-            Edition 01 · Athletic Intelligence
+            {t("landing.edition")}
           </p>
 
           <h1 className="text-balance text-[14vw] font-medium leading-[0.92] tracking-[-0.045em] sm:text-[10vw] md:text-[8vw] lg:text-[7.2rem]">
-            Train with <span className="font-serif italic font-normal">clarity.</span>
+            {t("landing.hero.line1a")} <span className="font-serif italic font-normal">{t("landing.hero.line1b")}</span>
             <br />
-            Improve with <span className="font-serif italic font-normal">intent.</span>
+            {t("landing.hero.line2a")} <span className="font-serif italic font-normal">{t("landing.hero.line2b")}</span>
           </h1>
 
           <div className="mt-16 grid gap-12 lg:grid-cols-[1fr_auto] lg:items-end">
             <p className="max-w-xl text-pretty text-[17px] leading-relaxed text-muted-foreground">
-              CourtMind is a quiet, deliberate system for athletes who measure progress in inches, not impressions. It reads your training, finds the gap, and tells you exactly what to do next.
+              {t("landing.hero.copy")}
             </p>
 
             <div className="flex items-center gap-4">
@@ -88,11 +93,11 @@ function Hero() {
                 to="/onboarding"
                 className="group inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-4 text-[14px] font-medium text-background transition hover:opacity-90"
               >
-                Start your assessment
+                {t("landing.cta.start")}
                 
               </Link>
-              <Link to="/dashboard" className="text-[14px] text-foreground/70 underline-offset-4 transition hover:text-foreground hover:underline">
-                Preview the system
+              <Link to="/home" className="text-[14px] text-foreground/70 underline-offset-4 transition hover:text-foreground hover:underline">
+                {t("landing.cta.preview")}
               </Link>
             </div>
           </div>
