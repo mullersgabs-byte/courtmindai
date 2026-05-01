@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Loader2, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
@@ -58,7 +57,7 @@ function ResetPasswordPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/auth" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Back to sign in
+             Back to sign in
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Reset password</p>
           <div className="w-12" />
@@ -78,7 +77,7 @@ function ResetPasswordPage() {
 
           <form onSubmit={onSubmit} className="mt-10 space-y-4">
             <label className="flex items-center gap-3 rounded-xl border hairline bg-card px-4 py-3">
-              <Lock className="h-4 w-4 text-muted-foreground" />
+              
               <input
                 type="password" required minLength={6} value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -88,7 +87,7 @@ function ResetPasswordPage() {
               />
             </label>
             <label className="flex items-center gap-3 rounded-xl border hairline bg-card px-4 py-3">
-              <Lock className="h-4 w-4 text-muted-foreground" />
+              
               <input
                 type="password" required minLength={6} value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
@@ -112,8 +111,8 @@ function ResetPasswordPage() {
               className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90 disabled:opacity-60"
             >
               {loading
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>
-                : <>Update password <ArrowRight className="h-4 w-4" /></>}
+                ? <> Updating…</>
+                : <>Update password </>}
             </button>
           </form>
         </div>

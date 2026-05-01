@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Target, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -79,7 +78,7 @@ function OnboardingPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Exit
+             Exit
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
             Step {step + 1} <span className="text-foreground/30">/ {total}</span>
@@ -131,7 +130,7 @@ function OnboardingPage() {
             disabled={step === 0}
             className="inline-flex items-center gap-2 rounded-full border hairline px-5 py-3 text-[13px] text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
           >
-            <ArrowLeft className="h-4 w-4" /> Back
+             Back
           </button>
           <button
             type="button"
@@ -144,7 +143,7 @@ function OnboardingPage() {
             }`}
           >
             {step === total - 1 ? "Generate my plan" : "Continue"}
-            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+            
           </button>
         </div>
       </main>
@@ -157,7 +156,7 @@ function SportStep({ value, onChange }: { value: string; onChange: (s: string) =
   return (
     <section>
       <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
-        <Activity className="mr-2 inline h-3 w-3" /> Discipline
+         Discipline
       </p>
       <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
         What do you <span className="font-serif italic font-normal text-court-gradient">train?</span>
@@ -184,7 +183,7 @@ function SportStep({ value, onChange }: { value: string; onChange: (s: string) =
                 <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                   {s}
                 </span>
-                {active && <Check className="h-4 w-4 text-court" />}
+                {active && }
               </div>
             </button>
           );
@@ -205,7 +204,7 @@ function LevelStep({
   return (
     <section>
       <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
-        <Activity className="mr-2 inline h-3 w-3" /> Level
+         Level
       </p>
       <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
         Where are you <span className="font-serif italic font-normal text-court-gradient">today?</span>
@@ -232,7 +231,7 @@ function LevelStep({
                 <span className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
                   {l.sub}
                 </span>
-                {active && <Check className="h-4 w-4 text-court" />}
+                {active && }
               </div>
               <p className={`mt-6 text-2xl font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                 {l.label}
@@ -251,7 +250,7 @@ function GoalStep({ value, onChange }: { value: string; onChange: (g: string) =>
   return (
     <section>
       <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">
-        <Target className="mr-2 inline h-3 w-3" /> Intent
+         Intent
       </p>
       <h1 className="mt-5 text-balance text-[clamp(2rem,5.5vw,3.8rem)] font-medium leading-[0.98] tracking-[-0.04em]">
         What's the <span className="font-serif italic font-normal text-court-gradient">goal?</span>
@@ -277,7 +276,7 @@ function GoalStep({ value, onChange }: { value: string; onChange: (g: string) =>
               <span className={`text-[15px] font-medium tracking-tight ${active ? "text-court" : "text-foreground"}`}>
                 {g}
               </span>
-              {active && <Check className="h-4 w-4 text-court" />}
+              {active && }
             </button>
           );
         })}

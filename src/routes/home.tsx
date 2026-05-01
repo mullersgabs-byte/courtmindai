@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Play, ChevronRight, Flame, Timer, Activity, Target, Upload, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 import sportTennis from "@/assets/sport-tennis.jpg";
@@ -95,7 +94,7 @@ function HomePage() {
                 </div>
                 <div className="absolute bottom-6 left-6 flex items-center gap-3">
                   <button className="grid h-14 w-14 place-items-center rounded-full bg-court text-ink shadow-lg glow-court transition hover:scale-105">
-                    <Play className="h-5 w-5 fill-ink" />
+                    
                   </button>
                   <div>
                     <p className="text-[12px] uppercase tracking-[0.2em] text-foreground/70">Tennis · 1h 10m</p>
@@ -108,10 +107,10 @@ function HomePage() {
                 <div>
                   <ul className="divide-y hairline">
                     {[
-                      { i: <Flame className="h-4 w-4" />, t: "Warm-up", d: "Mobility · 10 min" },
-                      { i: <Activity className="h-4 w-4" />, t: "Footwork ladder", d: "Lateral · 15 min" },
-                      { i: <Timer className="h-4 w-4" />, t: "Crosscourt rally", d: "20-ball sets · 30 min" },
-                      { i: <Target className="h-4 w-4" />, t: "Serve placement", d: "Wide / T / body · 15 min" },
+                      { i: , t: "Warm-up", d: "Mobility · 10 min" },
+                      { i: , t: "Footwork ladder", d: "Lateral · 15 min" },
+                      { i: , t: "Crosscourt rally", d: "20-ball sets · 30 min" },
+                      { i: , t: "Serve placement", d: "Wide / T / body · 15 min" },
                     ].map((b) => (
                       <li key={b.t} className="flex items-center gap-4 py-3.5">
                         <span className="grid h-9 w-9 place-items-center rounded-full border hairline text-court">
@@ -121,7 +120,7 @@ function HomePage() {
                           <p className="text-[14px] font-medium">{b.t}</p>
                           <p className="text-[12px] text-muted-foreground">{b.d}</p>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        
                       </li>
                     ))}
                   </ul>
@@ -133,7 +132,7 @@ function HomePage() {
                     to="/analyze"
                     className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-court px-5 py-3.5 text-[14px] font-medium text-ink transition hover:opacity-90 glow-court-soft"
                   >
-                    <Play className="h-4 w-4 fill-ink" /> Start training
+                     Start training
                   </Link>
                 </div>
               </div>
@@ -196,7 +195,7 @@ function HomePage() {
                 to="/analyze"
                 className="inline-flex items-center gap-2 rounded-full bg-court px-6 py-3.5 text-[14px] font-medium text-ink transition hover:opacity-90 glow-court"
               >
-                <Upload className="h-4 w-4" /> Send training
+                 Send training
               </Link>
             </div>
           </div>
@@ -260,14 +259,14 @@ function Avatar() {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
           >
-            <User className="h-3.5 w-3.5" /> Profile
+             Profile
           </Link>
           {email ? (
             <button
               onClick={signOut}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-foreground hover:bg-foreground/5"
             >
-              <LogOut className="h-3.5 w-3.5" /> Sign out
+               Sign out
             </button>
           ) : (
             <Link
@@ -275,7 +274,7 @@ function Avatar() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
             >
-              <User className="h-3.5 w-3.5" /> Sign in
+               Sign in
             </Link>
           )}
         </div>
@@ -319,7 +318,7 @@ function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: 
         <img src={img} alt={t} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full glass text-foreground transition group-hover:bg-court group-hover:text-ink">
-          <Play className="h-4 w-4" />
+          
         </button>
         <div className="absolute bottom-4 left-4 right-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-foreground/70">{d}</p>

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -76,7 +75,7 @@ function AuthPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Back
+             Back
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
             {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Reset password"}
@@ -102,7 +101,7 @@ function AuthPage() {
           </p>
 
           <form onSubmit={onSubmit} className="mt-10 space-y-4">
-            <Field icon={<Mail className="h-4 w-4" />}>
+            <Field>
               <input
                 type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -112,7 +111,7 @@ function AuthPage() {
             </Field>
 
             {mode !== "forgot" && (
-              <Field icon={<Lock className="h-4 w-4" />}>
+              <Field>
                 <input
                   type="password" required minLength={6} value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -134,8 +133,8 @@ function AuthPage() {
               className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90 disabled:opacity-60"
             >
               {loading
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Working…</>
-                : <>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"} <ArrowRight className="h-4 w-4" /></>}
+                ? <> Working…</>
+                : <>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"} </>}
             </button>
           </form>
 

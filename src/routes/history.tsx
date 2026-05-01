@@ -1,9 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft, Calendar, Clock, TrendingUp, TrendingDown, Minus,
-  Activity, Trash2, GitCompare, Video, Dumbbell,
-} from "lucide-react";
 import { listAnalyses, type AnalysisRow } from "@/server/history.functions";
 
 export const Route = createFileRoute("/history")({
@@ -131,7 +127,7 @@ function HistoryPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">History</p>
           <button
@@ -149,7 +145,7 @@ function HistoryPage() {
         <section className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
           <div className="animate-float-up">
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-              <Calendar className="mr-2 inline h-3 w-3" /> Archive
+               Archive
             </p>
             <h1 className="mt-5 text-balance text-[clamp(2.2rem,6vw,4.2rem)] font-medium leading-[0.96] tracking-[-0.04em]">
               Every session, <span className="font-serif italic font-normal text-platinum-gradient">remembered.</span>
@@ -160,15 +156,15 @@ function HistoryPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard label="Total analyses" value={`${completedAnalyses.length}`} icon={<Video className="h-4 w-4" />} />
-            <StatCard label="Logged workouts" value={`${workouts.length}`} icon={<Dumbbell className="h-4 w-4" />} />
+            <StatCard label="Total analyses" value={`${completedAnalyses.length}`} />
+            <StatCard label="Logged workouts" value={`${workouts.length}`} />
             <StatCard
               label="Avg. score"
               value={avgScore == null ? "—" : avgScore.toFixed(1)}
               icon={
-                trend > 0 ? <TrendingUp className="h-4 w-4" /> :
-                trend < 0 ? <TrendingDown className="h-4 w-4" /> :
-                <Minus className="h-4 w-4" />
+                trend > 0 ?  :
+                trend < 0 ?  :
+                
               }
               hint={trend === 0 ? undefined : trend > 0 ? `+${trend.toFixed(1)} vs prev` : `${trend.toFixed(1)} vs prev`}
             />
@@ -199,7 +195,7 @@ function HistoryPage() {
             onClick={() => setShowAdd(true)}
             className="inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[13px] text-foreground transition hover:bg-foreground hover:text-background"
           >
-            <Dumbbell className="h-4 w-4" /> Log a workout
+             Log a workout
           </button>
         </section>
 
@@ -274,7 +270,7 @@ function EmptyState() {
   return (
     <div className="rounded-3xl border hairline bg-card p-12 text-center">
       <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border hairline">
-        <Activity className="h-5 w-5 text-muted-foreground" />
+        
       </div>
       <h3 className="mt-5 text-xl font-medium tracking-tight">Nothing here yet</h3>
       <p className="mt-2 text-[14px] text-muted-foreground">
@@ -300,9 +296,9 @@ function AnalysisCard({ row, comparing, onCompare }: { row: AnalysisRow; compari
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            <Video className="h-3.5 w-3.5" /> Analysis
+             Analysis
             <span className="text-foreground/40">·</span>
-            <Clock className="h-3 w-3" /> {formatTime(row.created_at)}
+             {formatTime(row.created_at)}
           </p>
           <h4 className="mt-2 text-[16px] font-medium leading-tight tracking-tight truncate">
             {row.verdict || "Performance review"}
@@ -326,7 +322,7 @@ function AnalysisCard({ row, comparing, onCompare }: { row: AnalysisRow; compari
             comparing ? "bg-foreground text-background border-foreground" : "hairline hover:bg-foreground/5"
           }`}
         >
-          <GitCompare className="h-3.5 w-3.5" /> {comparing ? "Selected" : "Compare"}
+           {comparing ? "Selected" : "Compare"}
         </button>
       </div>
     </div>
@@ -339,9 +335,9 @@ function WorkoutCard({ entry, onDelete }: { entry: WorkoutEntry; onDelete: () =>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            <Dumbbell className="h-3.5 w-3.5" /> Workout
+             Workout
             <span className="text-foreground/40">·</span>
-            <Clock className="h-3 w-3" /> {formatTime(entry.date)}
+             {formatTime(entry.date)}
           </p>
           <h4 className="mt-2 text-[16px] font-medium tracking-tight">{entry.title}</h4>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
@@ -357,7 +353,7 @@ function WorkoutCard({ entry, onDelete }: { entry: WorkoutEntry; onDelete: () =>
           aria-label="Remove"
           className="rounded-full border hairline p-2 text-muted-foreground transition hover:text-foreground"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          
         </button>
       </div>
     </div>
@@ -381,7 +377,7 @@ function ComparePanel({
     <section className="mt-8 rounded-3xl border border-foreground/30 bg-card p-6 sm:p-8 glow-soft animate-float-up">
       <div className="flex items-center justify-between">
         <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          <GitCompare className="h-3.5 w-3.5" /> Compare
+           Compare
         </p>
         <button onClick={onClear} className="text-[12px] text-muted-foreground hover:text-foreground">Clear</button>
       </div>

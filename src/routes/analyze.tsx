@@ -1,11 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import {
-  Upload, ArrowLeft, Play, Pause, Check,
-  CheckCircle2, AlertTriangle, XCircle, Loader2, ChevronRight,
-  Film, Gauge,
-} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeVideo, type VideoAnalysis, type VideoEvent } from "@/server/analyze.functions";
 
@@ -121,7 +116,7 @@ function AnalyzePage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Analysis</p>
           <div className="w-16" />
@@ -191,7 +186,7 @@ function UploadView({ onPick }: { onPick: (file: File) => void }) {
         <div className="relative flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-5">
             <span className="grid h-16 w-16 place-items-center rounded-full bg-court text-ink glow-court animate-pulse-court">
-              <Upload className="h-6 w-6" />
+              
             </span>
             <div>
               <p className="text-[12px] uppercase tracking-[0.24em] text-court">Upload</p>
@@ -201,17 +196,17 @@ function UploadView({ onPick }: { onPick: (file: File) => void }) {
               <p className="mt-1 text-[13px] text-muted-foreground">MP4, MOV, WebM · up to 100 MB</p>
             </div>
           </div>
-          <ChevronRight className="h-6 w-6 text-court transition group-hover:translate-x-1" />
+          
         </div>
       </button>
 
       <div className="mt-12 rounded-2xl border hairline glass p-6">
         <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">For best precision</p>
         <ul className="mt-4 grid gap-3 text-[14px] text-foreground/85 sm:grid-cols-2">
-          <li className="flex items-start gap-3"><Check className="mt-1 h-4 w-4 text-court" /> Keep the full body in frame</li>
-          <li className="flex items-start gap-3"><Check className="mt-1 h-4 w-4 text-court" /> Side angle, stable camera</li>
-          <li className="flex items-start gap-3"><Check className="mt-1 h-4 w-4 text-court" /> Good, even lighting</li>
-          <li className="flex items-start gap-3"><Check className="mt-1 h-4 w-4 text-court" /> 10–60 seconds is ideal</li>
+          <li className="flex items-start gap-3"> Keep the full body in frame</li>
+          <li className="flex items-start gap-3"> Side angle, stable camera</li>
+          <li className="flex items-start gap-3"> Good, even lighting</li>
+          <li className="flex items-start gap-3"> 10–60 seconds is ideal</li>
         </ul>
       </div>
     </div>
@@ -253,7 +248,7 @@ function ErrorView({ message, onReset }: { message: string; onReset: () => void 
   return (
     <div className="mx-auto max-w-xl py-16 text-center animate-fade-in">
       <span className="grid h-14 w-14 mx-auto place-items-center rounded-full bg-danger/10 text-danger glow-danger">
-        <XCircle className="h-6 w-6" />
+        
       </span>
       <h2 className="mt-6 text-2xl font-medium tracking-tight">Analysis failed</h2>
       <p className="mt-3 text-[14px] text-muted-foreground">{message}</p>
@@ -365,7 +360,7 @@ function ResultView({
             Your video
           </div>
           <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-[11px] text-foreground">
-            <Gauge className="h-3.5 w-3.5 text-court" />
+            
             Analysed by AI
           </div>
 
@@ -382,7 +377,7 @@ function ResultView({
               onClick={togglePlay}
               className="grid h-10 w-10 place-items-center rounded-full bg-court text-ink glow-court-soft"
             >
-              {playing ? <Pause className="h-4 w-4 fill-ink" /> : <Play className="h-4 w-4 fill-ink" />}
+              {playing ?  : }
             </button>
             <div className="flex-1">
               <div onClick={seekBar} className="relative h-2 cursor-pointer rounded-full bg-foreground/15">
@@ -466,9 +461,9 @@ function fmt(s: number) {
 }
 
 function toneOf(t: VideoEvent["type"]) {
-  if (t === "bad")  return { label: "Mistake",  color: "var(--danger)",  text: "text-danger",  bg: "bg-danger/10",  icon: <XCircle className="h-4 w-4" />,  glow: "glow-danger",  border: "border-danger/40" };
-  if (t === "warn") return { label: "Improve",  color: "var(--warn)",    text: "text-warn",    bg: "bg-warn/10",    icon: <AlertTriangle className="h-4 w-4" />, glow: "glow-warn",   border: "border-warn/40" };
-  return                 { label: "Good",     color: "var(--court)",   text: "text-success", bg: "bg-success/10", icon: <CheckCircle2 className="h-4 w-4" />,   glow: "",            border: "border-success/40" };
+  if (t === "bad")  return { label: "Mistake",  color: "var(--danger)",  text: "text-danger",  bg: "bg-danger/10",  icon: ,  glow: "glow-danger",  border: "border-danger/40" };
+  if (t === "warn") return { label: "Improve",  color: "var(--warn)",    text: "text-warn",    bg: "bg-warn/10",    icon: , glow: "glow-warn",   border: "border-warn/40" };
+  return                 { label: "Good",     color: "var(--court)",   text: "text-success", bg: "bg-success/10", icon: ,   glow: "",            border: "border-success/40" };
 }
 
 function Legend({ tone, label }: { tone: "success" | "warn" | "danger"; label: string }) {
@@ -512,7 +507,7 @@ function OverallScore({ score, verdict }: { score: number; verdict: string }) {
           </p>
         </div>
         <div className="flex items-center gap-3 text-muted-foreground">
-          <Gauge className="h-4 w-4 text-court" />
+          
           <p className="max-w-md text-right text-[14px]">{verdict || "Solid base — refine the details below."}</p>
         </div>
       </div>
@@ -607,7 +602,7 @@ function EvidenceCard({
           <img src={thumb} alt={ev.title} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-muted-foreground">
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Film className="h-5 w-5" />}
+            {loading ?  : }
           </div>
         )}
         {/* Gradient + tone tint */}
@@ -634,7 +629,7 @@ function EvidenceCard({
         {/* Hover play hint */}
         <div className="absolute inset-0 grid place-items-center opacity-0 transition group-hover:opacity-100">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-court text-ink glow-court">
-            <Play className="h-5 w-5 fill-ink" />
+            
           </span>
         </div>
       </div>

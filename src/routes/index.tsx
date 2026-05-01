@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -55,7 +54,7 @@ function Nav() {
             className="group inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition hover:opacity-90"
           >
             Begin
-            <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            
           </Link>
         </div>
       </div>
@@ -92,7 +91,7 @@ function Hero() {
                 className="group inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-4 text-[14px] font-medium text-background transition hover:opacity-90"
               >
                 Start your assessment
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                
               </Link>
               <Link to="/dashboard" className="text-[14px] text-foreground/70 underline-offset-4 transition hover:text-foreground hover:underline">
                 Preview the system
@@ -172,7 +171,7 @@ function Capabilities() {
             <div key={c.n} className="group bg-background p-10 transition hover:bg-card">
               <div className="flex items-baseline justify-between">
                 <span className="font-serif text-3xl italic text-muted-foreground">{c.n}</span>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-foreground" />
+                
               </div>
               <h3 className="mt-16 text-2xl font-medium tracking-tight">{c.t}</h3>
               <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{c.d}</p>
@@ -271,7 +270,7 @@ function Disciplines() {
               </span>
               <span className="col-span-9 text-[clamp(1.6rem,3vw,2.5rem)] font-medium tracking-tight">{d}</span>
               <span className="col-span-2 justify-self-end text-muted-foreground transition group-hover:text-foreground">
-                <ArrowUpRight className="h-5 w-5" />
+                
               </span>
             </li>
           ))}
@@ -337,7 +336,7 @@ function Pricing() {
               }`}
             >
               Begin
-              <ArrowUpRight className="h-4 w-4" />
+              
             </Link>
           </div>
         ))}
@@ -361,7 +360,7 @@ function Closing() {
             className="group inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-4 text-[14px] font-medium text-background transition hover:opacity-90"
           >
             Start your assessment
-            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+            
           </Link>
           <p className="text-[13px] text-muted-foreground">No credit card. Two minutes.</p>
         </div>

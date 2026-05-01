@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Play, Pause, Timer, Flame, Target, ChevronRight, RotateCcw, SkipForward, Check } from "lucide-react";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
 export const Route = createFileRoute("/exercise")({
@@ -105,7 +104,7 @@ function ExercisePage() {
       <header className="relative z-20">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-5 sm:px-8">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Exercise · 03 of 12</p>
           <div className="w-16" />
@@ -127,9 +126,9 @@ function ExercisePage() {
 
           {/* meta row */}
           <ul className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10">
-            <Meta icon={<Timer className="h-4 w-4" />} label="Duration" value={`${TOTAL_SETS} × ${WORK_SECONDS}s`} />
-            <Meta icon={<Flame className="h-4 w-4" />} label="Intensity" value="High" />
-            <Meta icon={<Target className="h-4 w-4" />} label="Focus" value="Reaction" />
+            <Meta label="Duration" value={`${TOTAL_SETS} × ${WORK_SECONDS}s`} />
+            <Meta label="Intensity" value="High" />
+            <Meta label="Focus" value="Reaction" />
           </ul>
 
           {/* Execution mode — timer & controls */}
@@ -240,7 +239,7 @@ function TimerPanel({
             <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{phaseLabel}</p>
             {phase === "done" ? (
               <div className="mt-1 grid h-12 w-12 place-items-center rounded-full bg-foreground text-background">
-                <Check className="h-5 w-5" />
+                
               </div>
             ) : (
               <p className="mt-1 font-serif text-[clamp(2.6rem,5vw,3.4rem)] tabular-nums leading-none tracking-tight">
@@ -262,7 +261,7 @@ function TimerPanel({
               onClick={onStart}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
             >
-              <Play className="h-4 w-4" />
+              
               {phase === "idle" ? "Start" : phase === "done" ? "Restart" : "Resume"}
             </button>
           ) : (
@@ -270,7 +269,7 @@ function TimerPanel({
               onClick={onPause}
               className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
             >
-              <Pause className="h-4 w-4" /> Pause
+               Pause
             </button>
           )}
           <button
@@ -278,13 +277,13 @@ function TimerPanel({
             disabled={!running || phase === "done"}
             className="inline-flex items-center justify-center gap-2 rounded-full border hairline px-6 py-3 text-[13px] text-foreground/85 transition hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
           >
-            <SkipForward className="h-4 w-4" /> Skip phase
+             Skip phase
           </button>
           <button
             onClick={onReset}
             className="inline-flex items-center justify-center gap-2 rounded-full border hairline px-6 py-3 text-[13px] text-muted-foreground transition hover:text-foreground"
           >
-            <RotateCcw className="h-4 w-4" /> Reset
+             Reset
           </button>
         </div>
       </div>
