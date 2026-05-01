@@ -6,6 +6,14 @@ import sportRunning from "@/assets/sport-running.jpg";
 import sportFootball from "@/assets/sport-football.jpg";
 import train1 from "@/assets/train-1.jpg";
 import train2 from "@/assets/train-2.jpg";
+import {
+  addSessionLog,
+  getWeekCheckIns,
+  saveDailyCheckIn,
+  isoDate,
+  weekStart,
+  type SessionLog,
+} from "@/lib/sessionStore";
 
 export const Route = createFileRoute("/training")({
   head: () => ({
