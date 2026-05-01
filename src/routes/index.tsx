@@ -47,11 +47,11 @@ function Nav() {
           <a href="#disciplines" className="transition hover:text-foreground">Disciplines</a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link to="/home" className="hidden text-[13px] text-muted-foreground transition hover:text-foreground sm:inline">
+          <Link to="/auth" className="hidden text-[13px] text-muted-foreground transition hover:text-foreground sm:inline">
             Sign in
           </Link>
           <Link
-            to="/home"
+            to="/auth"
             className="group inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition hover:opacity-90"
           >
             Begin
