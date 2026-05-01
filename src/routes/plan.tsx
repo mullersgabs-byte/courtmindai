@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, Sparkles, Loader2, Flame, Timer, Activity, Check,
-  CalendarDays, ChevronRight, Target, RefreshCw,
+  CalendarDays, ChevronRight, Target, RefreshCw, TrendingUp, Play, Trophy, Zap, Layers,
 } from "lucide-react";
 import { generatePlan, type WeeklyPlan, type DayPlan } from "@/server/plan.functions";
 
@@ -100,8 +100,14 @@ function PlanPage() {
       </header>
 
       <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
+        {/* What's next + progress */}
+        <NextUpAndProgress sport={sport} level={level} plan={plan} />
+
+        {/* Recommended programs */}
+        <RecommendedPrograms sport={sport} level={level} />
+
         {/* Hero */}
-        <section className="grid gap-12 lg:grid-cols-[1fr_1.1fr]">
+        <section className="mt-20 grid gap-12 lg:grid-cols-[1fr_1.1fr]">
           <div className="animate-float-up">
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">AI · Personal coach</p>
             <h1 className="mt-5 text-balance text-[clamp(2.2rem,6vw,4.2rem)] font-medium leading-[0.96] tracking-[-0.04em]">
