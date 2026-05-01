@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft, Sparkles, Loader2, Flame, Timer, Activity, Check,
   CalendarDays, ChevronRight, Target, RefreshCw,
@@ -32,6 +32,18 @@ function PlanPage() {
   const [days, setDays] = useState(4);
   const [minutes, setMinutes] = useState(60);
   const [focus, setFocus] = useState("");
+
+  // Hydrate from onboarding profile (sport, level, goal)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("courtmind.profile");
+      if (!raw) return;
+      const p = JSON.parse(raw) as { sport?: string; level?: "beginner"|"intermediate"|"advanced"|null; goal?: string };
+      if (p.sport) setSport(p.sport);
+      if (p.level) setLevel(p.level);
+      if (p.goal) setFocus(p.goal);
+    } catch {}
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
