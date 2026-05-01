@@ -54,7 +54,8 @@ const HISTORY_KEY = "courtmind.history.v1";
 type StoredStatus = Record<string, { status: Session["status"]; completedAt?: string; logId?: string }>;
 type WorkoutEntry = {
   id: string; date: string; title: string; sport?: string;
-  durationMinutes?: number; intensity?: "Low" | "Medium" | "High"; note?: string;
+  durationMinutes?: number; intensity?: "Low" | "Medium" | "High";
+  note?: string;
 };
 
 function readStatus(): StoredStatus {
