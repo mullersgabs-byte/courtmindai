@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { generatePlan, type WeeklyPlan, type DayPlan } from "@/server/plan.functions";
+import {
+  generatePlan,
+  generatePlanFromInsights,
+  type WeeklyPlan,
+  type DayPlan,
+} from "@/server/plan.functions";
+import {
+  getLastAnalysis,
+  getRecentCheckIns,
+  getSessionLogs,
+  type StoredAnalysis,
+} from "@/lib/sessionStore";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
@@ -43,6 +54,7 @@ const LEVELS: Array<{ id: "beginner"|"intermediate"|"advanced"; label: string; s
 
 function PlanPage() {
   const generate = useServerFn(generatePlan);
+  const generateFromInsights = useServerFn(generatePlanFromInsights);
 
   const [sport, setSport] = useState("Tennis");
   const [level, setLevel] = useState<"beginner"|"intermediate"|"advanced">("intermediate");
@@ -65,6 +77,15 @@ function PlanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
+  const [lastAnalysis, setLastAnalysis] = useState<StoredAnalysis | null>(null);
+  const [logsCount, setLogsCount] = useState(0);
+  const [checkinsCount, setCheckinsCount] = useState(0);
+
+  useEffect(() => {
+    setLastAnalysis(getLastAnalysis());
+    setLogsCount(getSessionLogs().length);
+    setCheckinsCount(getRecentCheckIns(7).length);
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +93,44 @@ function PlanPage() {
     try {
       const res = await generate({
         data: { sport, level, daysPerWeek: days, focus, sessionMinutes: minutes },
+      });
+      if (res.error) setError(res.error);
+      else setPlan(res.plan);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGenerateFromInsights = async () => {
+    setLoading(true); setError(null); setPlan(null);
+    try {
+      const analysis = getLastAnalysis();
+      const recentLogs = getSessionLogs().slice(0, 10).map((l) => ({
+        date: l.date,
+        title: l.title,
+        actualMinutes: l.actualMinutes,
+        rpe: l.rpe,
+        notes: l.notes,
+      }));
+      const recentCheckIns = getRecentCheckIns(7).map((c) => ({
+        date: c.date,
+        energy: c.energy,
+        soreness: c.soreness,
+        sleepHours: c.sleepHours,
+        note: c.note,
+      }));
+
+      const res = await generateFromInsights({
+        data: {
+          sport, level, daysPerWeek: days, sessionMinutes: minutes, focus,
+          videoVerdict: analysis?.verdict ?? "",
+          videoEvents: analysis?.events ?? [],
+          recentLogs,
+          recentCheckIns,
+        },
       });
       if (res.error) setError(res.error);
       else setPlan(res.plan);
@@ -96,6 +155,15 @@ function PlanPage() {
       </header>
 
       <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
+        {/* Insight-driven generation banner */}
+        <InsightsBanner
+          analysis={lastAnalysis}
+          logsCount={logsCount}
+          checkinsCount={checkinsCount}
+          loading={loading}
+          onGenerate={onGenerateFromInsights}
+        />
+
         {/* What's next + progress */}
         <NextUpAndProgress sport={sport} level={level} plan={plan} />
 
