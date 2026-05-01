@@ -1,9 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft, Play, Check, Flame, Timer, Activity, Undo2,
-  TrendingUp, ChevronRight, Calendar as CalendarIcon,
-} from "lucide-react";
 import sportTennis from "@/assets/sport-tennis.jpg";
 import sportGym from "@/assets/sport-gym.jpg";
 import sportRunning from "@/assets/sport-running.jpg";
@@ -149,7 +145,7 @@ function TrainingPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Training</p>
           <div className="w-16" />
@@ -238,7 +234,7 @@ function TrainingPage() {
         <section className="mt-14 overflow-hidden rounded-2xl border hairline bg-card p-7">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-              <Activity className="h-4 w-4" />
+              
             </span>
             <p className="text-[11px] uppercase tracking-[0.24em] text-court">Coach note</p>
           </div>
@@ -290,7 +286,7 @@ function DailyCheckIn() {
                       : "border hairline text-muted-foreground",
                 ].join(" ")}
               >
-                {done ? <Check className="h-4 w-4" /> : labels[i]}
+                {done ? "✓" : labels[i]}
               </span>
               <span className={`text-[10px] uppercase tracking-[0.2em] ${isToday ? "text-court" : "text-muted-foreground"}`}>
                 {isToday ? "today" : labels[i]}
@@ -331,7 +327,7 @@ function DailyCheckIn() {
             : "bg-court text-ink hover:opacity-90 glow-court",
         ].join(" ")}
       >
-        {checkedToday ? <><Check className="h-4 w-4" /> Checked in</> : <><CalendarIcon className="h-4 w-4" /> Check in for today</>}
+        {checkedToday ? <> Checked in</> : <> Check in for today</>}
       </button>
     </div>
   );
@@ -343,7 +339,7 @@ function StatTile({ label, value, unit, delta }: { label: string; value: string;
     <div className="bg-background p-7">
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-        <TrendingUp className="h-4 w-4 text-court" />
+        
       </div>
       <p className="mt-8 flex items-baseline gap-2">
         <span className="text-5xl font-medium tracking-[-0.03em] leading-none">{value}</span>
@@ -431,10 +427,10 @@ function SessionRow({
       {/* meta */}
       <div className="col-span-12 sm:col-span-4 flex flex-wrap items-center gap-x-6 gap-y-1 sm:justify-end">
         <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <Timer className="h-3.5 w-3.5" /> {session.duration}
+           {session.duration}
         </span>
         <span className={`inline-flex items-center gap-1.5 text-[12px] ${intensityColor}`}>
-          <Flame className="h-3.5 w-3.5" /> {session.intensity}
+           {session.intensity}
         </span>
       </div>
 
@@ -446,10 +442,9 @@ function SessionRow({
             onClick={onUndo}
             aria-label="Mark as not done"
             title="Undo completion"
-            className="group/undo grid h-10 w-10 place-items-center rounded-full bg-success/15 text-success transition hover:bg-foreground/10 hover:text-foreground"
+            className="grid h-10 w-10 place-items-center rounded-full bg-success/15 text-[11px] font-medium uppercase tracking-[0.18em] text-success transition hover:bg-foreground/10 hover:text-foreground"
           >
-            <Check className="h-4 w-4 group-hover/undo:hidden" />
-            <Undo2 className="hidden h-4 w-4 group-hover/undo:block" />
+            ✓
           </button>
         ) : (
           <button
@@ -458,14 +453,13 @@ function SessionRow({
             aria-label="Mark session as done"
             title="Mark as done"
             className={[
-              "group/play grid h-10 w-10 place-items-center rounded-full transition",
+              "grid h-10 w-10 place-items-center rounded-full text-[11px] font-medium uppercase tracking-[0.18em] transition",
               session.status === "today"
                 ? "bg-court text-ink glow-court animate-pulse-court"
                 : "border hairline text-foreground hover:bg-foreground hover:text-background hover:border-foreground",
             ].join(" ")}
           >
-            <Play className="h-4 w-4 fill-current group-hover/play:hidden" />
-            <Check className="hidden h-4 w-4 group-hover/play:block" />
+            Go
           </button>
         )}
       </div>
@@ -484,7 +478,7 @@ function ChartCard({
           <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{title}</p>
           <p className="mt-1 text-[12px] text-muted-foreground/70">{sub}</p>
         </div>
-        <Activity className="h-4 w-4 text-court" />
+        
       </div>
       <p className="mt-6 flex items-baseline gap-2">
         <span className="text-4xl font-medium tracking-[-0.03em] leading-none">{metric}</span>

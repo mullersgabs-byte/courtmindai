@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -59,7 +58,7 @@ function Dashboard() {
               Today's plan deepens that gain — without overreaching.
             </p>
             <button className="group inline-flex items-center gap-3 rounded-full bg-foreground px-6 py-4 text-[14px] font-medium text-background transition hover:opacity-90">
-              <Play className="h-4 w-4 fill-background" />
+              
               Start training
             </button>
           </div>
@@ -112,7 +111,7 @@ function Dashboard() {
                     <p className="text-[13px] text-muted-foreground">{b.d}</p>
                   </div>
                   <p className="col-span-3 text-right text-[13px] text-muted-foreground sm:col-span-3">{b.m}</p>
-                  <ArrowUpRight className="col-span-1 ml-auto h-4 w-4 text-muted-foreground" />
+                  
                 </li>
               ))}
             </ul>
@@ -172,7 +171,7 @@ function Dashboard() {
                   <span className="font-serif text-2xl italic">{s.score}</span>
                   <span className="ml-1 text-[12px] text-muted-foreground">/100</span>
                 </p>
-                <ArrowUpRight className="hidden h-4 w-4 text-muted-foreground sm:col-span-1 sm:ml-auto sm:block" />
+                
               </li>
             ))}
           </ul>
@@ -202,7 +201,7 @@ function Stat({
         <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
           {label}
         </p>
-        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+        
       </div>
       <div className="mt-12 flex items-baseline gap-2">
         <p className="text-7xl font-medium tracking-[-0.04em] leading-none">{value}</p>

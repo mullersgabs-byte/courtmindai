@@ -1,10 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft, Loader2, Flame, Timer, Activity, Check,
-  CalendarDays, ChevronRight, Target, RefreshCw, TrendingUp, Play, Trophy, Zap, Layers,
-} from "lucide-react";
 import { generatePlan, type WeeklyPlan, type DayPlan } from "@/server/plan.functions";
 
 export const Route = createFileRoute("/plan")({
@@ -92,7 +88,7 @@ function PlanPage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Weekly plan</p>
           <div className="w-16" />
@@ -174,11 +170,11 @@ function PlanPage() {
               className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-court px-6 py-4 text-[14px] font-medium text-ink transition hover:opacity-90 glow-court disabled:opacity-60"
             >
               {loading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Composing your week…</>
+                <> Composing your week…</>
               ) : plan ? (
-                <><RefreshCw className="h-4 w-4" /> Regenerate plan</>
+                <> Regenerate plan</>
               ) : (
-                <><Zap className="h-4 w-4" /> Generate plan</>
+                <> Generate plan</>
               )}
             </button>
 
@@ -257,7 +253,7 @@ function LoadingSkeleton() {
       <div className="rounded-3xl border hairline bg-card p-8 text-center">
         <div className="relative mx-auto h-14 w-14">
           <div className="absolute inset-0 rounded-full court-gradient opacity-20 blur-xl" />
-          <Loader2 className="relative h-14 w-14 animate-spin text-court" />
+          
         </div>
         <p className="mt-6 text-[13px] uppercase tracking-[0.24em] text-court">AI working</p>
         <h3 className="mt-2 text-balance text-[clamp(1.4rem,2.5vw,1.8rem)] font-medium tracking-tight">
@@ -283,7 +279,7 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
     <div className="overflow-hidden rounded-3xl border hairline bg-card p-7 sm:p-9">
       <div className="flex items-center gap-3">
         <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-          <Activity className="h-4 w-4" />
+          
         </span>
         <p className="text-[11px] uppercase tracking-[0.24em] text-court">{plan.sport} · {plan.level}</p>
       </div>
@@ -293,15 +289,15 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
       <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">{plan.overview}</p>
 
       <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
-        <Stat icon={<CalendarDays className="h-4 w-4" />} label="Training days" value={`${trainDays}`} />
-        <Stat icon={<Timer className="h-4 w-4" />} label="Weekly volume" value={`${Math.floor(totalMin / 60)}h ${totalMin % 60}m`} />
-        <Stat icon={<Target className="h-4 w-4" />} label="Approach" value="Progressive" />
+        <Stat label="Training days" value={`${trainDays}`} />
+        <Stat label="Weekly volume" value={`${Math.floor(totalMin / 60)}h ${totalMin % 60}m`} />
+        <Stat label="Approach" value="Progressive" />
       </div>
     </div>
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Stat({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-card p-5">
       <div className="flex items-center justify-between">
@@ -348,27 +344,27 @@ function DayCard({ day, index }: { day: DayPlan; index: number }) {
           {!isRest && (
             <>
               <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Timer className="h-3.5 w-3.5" /> {day.durationMinutes}m
+                 {day.durationMinutes}m
               </span>
               <span className={`inline-flex items-center gap-1.5 ${intensityColor}`}>
-                <Flame className="h-3.5 w-3.5" /> {day.intensity}
+                 {day.intensity}
               </span>
             </>
           )}
         </div>
-        <ChevronRight className={`col-span-12 sm:col-span-1 ml-auto h-4 w-4 text-muted-foreground transition ${open ? "rotate-90 text-court" : ""}`} />
+        
       </button>
 
       {open && !isRest && (
         <div className="border-t hairline px-5 pb-6 pt-5 sm:px-7">
           {/* Warmup */}
-          <Block label="Warm-up" icon={<Activity className="h-3.5 w-3.5" />}>
+          <Block label="Warm-up">
             <p className="text-[14px] leading-relaxed text-foreground/85">{day.warmup}</p>
           </Block>
 
           {/* Exercises */}
           {day.exercises.length > 0 && (
-            <Block label="Exercises" icon={<Check className="h-3.5 w-3.5" />}>
+            <Block label="Exercises">
               <ol className="divide-y hairline">
                 {day.exercises.map((ex, i) => (
                   <li key={i} className="grid grid-cols-12 items-start gap-3 py-3">
@@ -393,7 +389,7 @@ function DayCard({ day, index }: { day: DayPlan; index: number }) {
           )}
 
           {/* Cooldown */}
-          <Block label="Cool-down" icon={<Activity className="h-3.5 w-3.5" />}>
+          <Block label="Cool-down">
             <p className="text-[14px] leading-relaxed text-foreground/85">{day.cooldown}</p>
           </Block>
 
@@ -416,7 +412,7 @@ function DayCard({ day, index }: { day: DayPlan; index: number }) {
   );
 }
 
-function Block({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Block({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-5 first:mt-0">
       <p className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
@@ -476,7 +472,7 @@ function NextUpAndProgress({
       <div className="rounded-3xl border hairline bg-card p-6 sm:p-8">
         <div className="flex items-center justify-between">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            <Zap className="h-3.5 w-3.5" /> Up next
+             Up next
           </p>
           <span className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
             {sport}
@@ -505,13 +501,13 @@ function NextUpAndProgress({
           <>
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <Timer className="h-3.5 w-3.5" /> {nextDay.durationMinutes} min
+                 {nextDay.durationMinutes} min
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Flame className="h-3.5 w-3.5" /> {nextDay.intensity} intensity
+                 {nextDay.intensity} intensity
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5" /> {nextDay.exercises.length} exercises
+                 {nextDay.exercises.length} exercises
               </span>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
@@ -520,14 +516,14 @@ function NextUpAndProgress({
                 onClick={markSession}
                 className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-[13px] font-medium text-background transition hover:opacity-90"
               >
-                <Play className="h-4 w-4" /> Start session
+                 Start session
               </button>
               <button
                 type="button"
                 onClick={markSession}
                 className="inline-flex items-center gap-2 rounded-full border hairline px-5 py-3 text-[13px] text-foreground transition hover:bg-foreground/5"
               >
-                <Check className="h-4 w-4" /> Mark as done
+                 Mark as done
               </button>
             </div>
           </>
@@ -543,7 +539,7 @@ function NextUpAndProgress({
       <div className="rounded-3xl border hairline bg-card p-6 sm:p-8">
         <div className="flex items-center justify-between">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            <TrendingUp className="h-3.5 w-3.5" /> Estimated progress
+             Estimated progress
           </p>
           <span className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
             This week
@@ -649,7 +645,7 @@ function RecommendedPrograms({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-            <Trophy className="h-3.5 w-3.5" /> Recommended programs
+             Recommended programs
           </p>
           <h2 className="mt-3 text-balance text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">
             Multi-week paths for{" "}
@@ -716,7 +712,7 @@ function ProgramCard({ program, highlighted }: { program: Program; highlighted: 
         type="button"
         className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border hairline px-4 py-2.5 text-[13px] text-foreground transition group-hover:bg-foreground group-hover:text-background"
       >
-        Start program <ChevronRight className="h-4 w-4" />
+        Start program 
       </button>
     </div>
   );

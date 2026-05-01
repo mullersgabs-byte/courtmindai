@@ -1,10 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, TrendingUp, TrendingDown, Minus, Award, Flame,
-  Target, Calendar, Activity, ChevronRight,
-} from "lucide-react";
-import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar,
 } from "recharts";
 import { listAnalyses, type AnalysisRow } from "@/server/history.functions";
@@ -90,7 +86,7 @@ function ProfilePage() {
       <header className="sticky top-0 z-40 glass border-b hairline">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+             Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Profile</p>
           <button onClick={() => router.invalidate()} className="text-[13px] text-muted-foreground hover:text-foreground">Refresh</button>
@@ -120,7 +116,7 @@ function ProfilePage() {
           </div>
           <div />
           <Link to="/history" className="hidden lg:inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[13px] hover:bg-foreground/5">
-            <Calendar className="h-4 w-4" /> Open archive
+             Open archive
           </Link>
         </section>
 
@@ -128,10 +124,10 @@ function ProfilePage() {
         <section className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi label="Latest score" value={last ? `${Math.round(last.overall_score!)}` : "—"}
             hint={prev ? `${trend > 0 ? "+" : ""}${trend.toFixed(1)} vs prev` : undefined}
-            icon={trend > 0 ? <TrendingUp className="h-4 w-4" /> : trend < 0 ? <TrendingDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />} />
-          <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} icon={<Award className="h-4 w-4" />} />
-          <Kpi label="Avg. score" value={avg ? avg.toFixed(1) : "—"} icon={<Target className="h-4 w-4" />} />
-          <Kpi label="Streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} icon={<Flame className="h-4 w-4" />} />
+          />
+          <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} />
+          <Kpi label="Avg. score" value={avg ? avg.toFixed(1) : "—"} />
+          <Kpi label="Streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} />
         </section>
 
         {/* Evolution chart */}
@@ -188,7 +184,7 @@ function ProfilePage() {
 
         {/* Badges */}
         <section className="mt-12">
-          <SectionHeader icon={<Award className="h-3.5 w-3.5" />} title="Milestones" hint={`${badges.filter(b => b.earned).length} / ${badges.length}`} />
+          <SectionHeader title="Milestones" hint={`${badges.filter(b => b.earned).length} / ${badges.length}`} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {badges.map(b => <BadgeCard key={b.id} badge={b} />)}
           </div>
@@ -197,9 +193,9 @@ function ProfilePage() {
         {/* Recent analyses */}
         <section className="mt-12">
           <div className="flex items-end justify-between gap-3">
-            <SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title="Recent analyses" />
+            <SectionHeader title="Recent analyses" />
             <Link to="/history" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-              See all <ChevronRight className="h-3 w-3" />
+              See all 
             </Link>
           </div>
           <div className="mt-5 grid gap-3">
@@ -219,7 +215,7 @@ function ProfilePage() {
 
 /* ---------------- pieces ---------------- */
 
-function Kpi({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon: React.ReactNode }) {
+function Kpi({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon?: React.ReactNode }) {
   return (
     <div className="rounded-2xl border hairline bg-card p-5">
       <div className="flex items-center justify-between">
@@ -254,7 +250,7 @@ function EmptyChart({ label }: { label: string }) {
   );
 }
 
-function SectionHeader({ icon, title, hint }: { icon: React.ReactNode; title: string; hint?: string }) {
+function SectionHeader({ icon, title, hint }: { icon?: React.ReactNode; title: string; hint?: string }) {
   return (
     <div className="flex items-center justify-between">
       <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
@@ -271,14 +267,11 @@ function BadgeCard({ badge }: { badge: Badge }) {
       badge.earned ? "bg-card hairline" : "bg-card/40 hairline opacity-60"
     }`}>
       <div className="flex items-center justify-between">
-        <div className={`grid h-9 w-9 place-items-center rounded-full border ${
-          badge.earned ? "border-foreground/40 bg-foreground/5" : "hairline"
+        <span className={`text-[10px] uppercase tracking-[0.24em] ${
+          badge.earned ? "text-foreground" : "text-muted-foreground"
         }`}>
-          <Award className={`h-4 w-4 ${badge.earned ? "text-foreground" : "text-muted-foreground"}`} />
-        </div>
-        {badge.earned && (
-          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">Earned</span>
-        )}
+          {badge.earned ? "Earned" : "Locked"}
+        </span>
       </div>
       <p className="mt-4 text-[14px] font-medium tracking-tight">{badge.title}</p>
       <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{badge.detail}</p>
