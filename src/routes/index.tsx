@@ -22,7 +22,6 @@ function Index() {
         <Method />
         <Numbers />
         <Disciplines />
-        <Pricing />
         <Closing />
       </main>
       <Footer />
@@ -42,7 +41,6 @@ function Nav() {
         <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
           <a href="#method" className="transition hover:text-foreground">Method</a>
           <a href="#capabilities" className="transition hover:text-foreground">Capabilities</a>
-          <a href="#pricing" className="transition hover:text-foreground">Membership</a>
           <a href="#disciplines" className="transition hover:text-foreground">Disciplines</a>
         </nav>
         <div className="flex items-center gap-3">
