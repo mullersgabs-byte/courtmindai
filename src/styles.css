@@ -6,10 +6,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 
-/*
- * CourtMind Elite — "Clean Girl" premium athletic system.
- * Off-white base, warm sand, soft sage. Quiet, editorial, expensive.
- */
+/* CourtMind Elite — black + soft white + gold */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -38,62 +35,42 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-cream: var(--cream);
-  --color-sand: var(--sand);
-  --color-stone: var(--stone);
   --color-ink: var(--ink);
-  --color-sage: var(--sage);
-  --color-sage-soft: var(--sage-soft);
-  --color-clay: var(--clay);
+  --color-bone: var(--bone);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
   --font-display: "Inter", system-ui, sans-serif;
   --font-serif: "Instrument Serif", "Times New Roman", serif;
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0.875rem;
 
-  --cream: oklch(0.985 0.008 80);
-  --sand: oklch(0.94 0.018 78);
-  --stone: oklch(0.88 0.014 82);
-  --ink: oklch(0.22 0.012 80);
-  --sage: oklch(0.78 0.06 142);
-  --sage-soft: oklch(0.92 0.04 142);
-  --clay: oklch(0.82 0.045 60);
+  /* Elite palette */
+  --ink: oklch(0.16 0.005 80);            /* #0B0B0B soft black */
+  --bone: oklch(0.965 0.004 80);          /* #F5F5F5 soft white */
+  --gold: oklch(0.78 0.09 80);            /* #C6A962 muted gold */
+  --gold-soft: oklch(0.86 0.06 80);
 
-  --background: var(--cream);
-  --foreground: var(--ink);
-  --card: oklch(1 0 0);
-  --card-foreground: var(--ink);
-  --popover: oklch(1 0 0);
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--cream);
-  --secondary: var(--sand);
-  --secondary-foreground: var(--ink);
-  --muted: var(--sand);
-  --muted-foreground: oklch(0.5 0.012 80);
-  --accent: var(--sage);
+  --background: var(--ink);
+  --foreground: var(--bone);
+  --card: oklch(0.21 0.005 80);
+  --card-foreground: var(--bone);
+  --popover: oklch(0.21 0.005 80);
+  --popover-foreground: var(--bone);
+  --primary: var(--bone);
+  --primary-foreground: var(--ink);
+  --secondary: oklch(0.24 0.005 80);
+  --secondary-foreground: var(--bone);
+  --muted: oklch(0.24 0.005 80);
+  --muted-foreground: oklch(0.66 0.006 80);
+  --accent: var(--gold);
   --accent-foreground: var(--ink);
   --destructive: oklch(0.62 0.18 28);
-  --destructive-foreground: var(--cream);
-  --border: oklch(0.9 0.012 80);
-  --input: oklch(0.9 0.012 80);
-  --ring: var(--ink);
-}
-
-.dark {
-  --background: oklch(0.18 0.008 80);
-  --foreground: var(--cream);
-  --card: oklch(0.22 0.008 80);
-  --card-foreground: var(--cream);
-  --primary: var(--cream);
-  --primary-foreground: var(--ink);
-  --secondary: oklch(0.26 0.008 80);
-  --muted: oklch(0.26 0.008 80);
-  --muted-foreground: oklch(0.7 0.012 80);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: var(--cream);
+  --destructive-foreground: var(--bone);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.12);
+  --ring: var(--gold);
 }
 
 @layer base {
@@ -107,30 +84,44 @@
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 { letter-spacing: -0.035em; }
+  ::selection { background: var(--gold); color: var(--ink); }
 }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
   .font-serif { font-family: var(--font-serif); }
-  .hairline { border-color: oklch(0.22 0.012 80 / 0.08); }
-  .hairline-strong { border-color: oklch(0.22 0.012 80 / 0.18); }
+  .hairline { border-color: oklch(1 0 0 / 0.08); }
+  .hairline-strong { border-color: oklch(1 0 0 / 0.18); }
+  .text-gold { color: var(--gold); }
+  .bg-gold { background-color: var(--gold); }
+  .border-gold { border-color: var(--gold); }
+  .ring-gold { box-shadow: 0 0 0 1px var(--gold); }
+  .glass {
+    background-color: oklch(0.21 0.005 80 / 0.6);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
   .grain {
-    background-image: radial-gradient(oklch(0.22 0.012 80 / 0.025) 1px, transparent 1px);
+    background-image: radial-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px);
     background-size: 4px 4px;
   }
-  .glass {
-    background-color: oklch(1 0 0 / 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+  .gold-gradient {
+    background: linear-gradient(135deg, oklch(0.86 0.06 80) 0%, oklch(0.78 0.09 80) 50%, oklch(0.65 0.08 75) 100%);
   }
-  .ring-sage { box-shadow: 0 0 0 1px var(--sage); }
-  .shadow-soft { box-shadow: 0 1px 2px oklch(0.22 0.012 80 / 0.04), 0 8px 32px oklch(0.22 0.012 80 / 0.06); }
-  .shadow-lift { box-shadow: 0 2px 4px oklch(0.22 0.012 80 / 0.05), 0 16px 48px oklch(0.22 0.012 80 / 0.10); }
+  .text-gold-gradient {
+    background: linear-gradient(135deg, oklch(0.92 0.05 80) 0%, oklch(0.78 0.09 80) 50%, oklch(0.7 0.08 75) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .glow-gold {
+    box-shadow: 0 0 0 1px oklch(0.78 0.09 80 / 0.3), 0 8px 40px oklch(0.78 0.09 80 / 0.15);
+  }
 }
 
 @keyframes float-up {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-float-up { animation: float-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -139,14 +130,20 @@
 .animate-fade-in { animation: fade-in 1.2s ease-out both; }
 
 @keyframes shimmer {
-  0% { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0% { background-position: -800px 0; }
+  100% { background-position: 800px 0; }
 }
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, oklch(0.78 0.06 142 / 0.18), transparent);
-  background-size: 400px 100%;
-  animation: shimmer 1.8s infinite;
+  background: linear-gradient(90deg, transparent, oklch(0.78 0.09 80 / 0.25), transparent);
+  background-size: 800px 100%;
+  animation: shimmer 2s infinite;
 }
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.78 0.09 80 / 0.4); }
+  50% { box-shadow: 0 0 0 8px oklch(0.78 0.09 80 / 0); }
+}
+.animate-pulse-gold { animation: pulse-gold 2s ease-out infinite; }
 
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .animate-ticker { animation: ticker 60s linear infinite; }
