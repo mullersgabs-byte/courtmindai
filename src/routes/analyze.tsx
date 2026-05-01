@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Upload, Video, Image as ImageIcon, PenLine, ArrowLeft, Play, Pause,
   Sparkles, Check, Lock, ChevronRight, Activity, Target, Gauge, Zap,
+  CheckCircle2, AlertTriangle, XCircle, Lightbulb,
 } from "lucide-react";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
@@ -259,27 +260,36 @@ function ResultView({ onReset }: { onReset: () => void }) {
         <Metric icon={<Zap className="h-4 w-4" />} label="Tempo" value="79" unit="/100" />
       </section>
 
-      {/* Insights + locked premium */}
+      {/* Overall score with animated bar */}
+      <OverallScore score={8.7} />
+
+      {/* Feedback by severity + locked premium */}
       <section className="mt-10 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border hairline bg-card p-7 lg:col-span-2">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Key observations</p>
-          <ul className="mt-5 divide-y hairline">
-            {[
-              { t: "Hip rotation opens early", d: "Slight loss of power on contact. Delay rotation by ~120 ms." },
+        <div className="space-y-4 lg:col-span-2">
+          <FeedbackBlock
+            tone="success"
+            title="Strengths"
+            items={[
               { t: "Elbow path consistent", d: "Clean line through the swing — keep this base." },
+              { t: "Stable shoulder line", d: "Excellent kinetic chain on contact." },
+              { t: "Foot recovery balanced", d: "Center of mass holds well between shots." },
+            ]}
+          />
+          <FeedbackBlock
+            tone="warn"
+            title="To improve"
+            items={[
               { t: "Recovery step short", d: "Add one extra split-step before the next shot." },
-            ].map((o, i) => (
-              <li key={o.t} className="flex items-start gap-4 py-4">
-                <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-full border hairline text-[12px] text-court">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="text-[14px] font-medium">{o.t}</p>
-                  <p className="text-[13px] text-muted-foreground">{o.d}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+              { t: "Knee alignment drifts", d: "Right knee tracks slightly inward on landing." },
+            ]}
+          />
+          <FeedbackBlock
+            tone="danger"
+            title="Critical errors"
+            items={[
+              { t: "Hip rotation opens early", d: "Loses ~12% power on contact. Delay rotation by ~120 ms." },
+            ]}
+          />
         </div>
 
         {/* Locked deep analysis */}
@@ -308,6 +318,9 @@ function ResultView({ onReset }: { onReset: () => void }) {
           </div>
         </div>
       </section>
+
+      {/* AI suggestions */}
+      <AiSuggestions />
 
       {/* Suggested drills */}
       <section className="mt-10">
@@ -417,5 +430,131 @@ function PoseOverlay() {
         </text>
       </g>
     </svg>
+  );
+}
+
+/* ---------- Overall score with animated bar ---------- */
+function OverallScore({ score }: { score: number }) {
+  const pct = (score / 10) * 100;
+  return (
+    <section className="mt-10 overflow-hidden rounded-2xl border hairline bg-card p-7">
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-court">Overall score</p>
+          <p className="mt-3 flex items-baseline gap-1">
+            <span className="text-[clamp(3rem,7vw,5.5rem)] font-medium leading-none tracking-[-0.04em] text-court-gradient">
+              {score.toFixed(1)}
+            </span>
+            <span className="text-[18px] text-muted-foreground">/ 10</span>
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Verdict</p>
+          <p className="mt-2 text-[15px] font-medium">Strong session — refine the details.</p>
+        </div>
+      </div>
+      <div className="mt-7">
+        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-court glow-court-soft animate-score-fill"
+            style={{ ["--score-w" as string]: `${pct}%`, width: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-3 flex justify-between text-[11px] text-muted-foreground">
+          <span>0</span><span>5</span><span>10</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Feedback block (success / warn / danger) ---------- */
+type Tone = "success" | "warn" | "danger";
+function FeedbackBlock({
+  tone, title, items,
+}: { tone: Tone; title: string; items: { t: string; d: string }[] }) {
+  const cfg = {
+    success: {
+      icon: <CheckCircle2 className="h-4 w-4" />,
+      label: "Strengths",
+      ring: "border-l-2 border-l-success",
+      tint: "text-success",
+      tagBg: "bg-success/10",
+      glow: "",
+    },
+    warn: {
+      icon: <AlertTriangle className="h-4 w-4" />,
+      label: "To improve",
+      ring: "border-l-2 border-l-warn",
+      tint: "text-warn",
+      tagBg: "bg-warn/10",
+      glow: "glow-warn",
+    },
+    danger: {
+      icon: <XCircle className="h-4 w-4" />,
+      label: "Critical",
+      ring: "border-l-2 border-l-danger",
+      tint: "text-danger",
+      tagBg: "bg-danger/10",
+      glow: "glow-danger",
+    },
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border hairline bg-card p-6 ${cfg.ring}`}>
+      <div className="flex items-center gap-3">
+        <span className={`grid h-8 w-8 place-items-center rounded-full ${cfg.tagBg} ${cfg.tint} ${cfg.glow}`}>
+          {cfg.icon}
+        </span>
+        <p className={`text-[11px] uppercase tracking-[0.24em] ${cfg.tint}`}>{title}</p>
+      </div>
+      <ul className="mt-4 divide-y hairline">
+        {items.map((it) => (
+          <li key={it.t} className="flex items-start gap-3 py-3">
+            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.tint.replace("text-", "bg-")}`} />
+            <div>
+              <p className="text-[14px] font-medium">{it.t}</p>
+              <p className="text-[13px] text-muted-foreground">{it.d}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ---------- AI suggestions ---------- */
+function AiSuggestions() {
+  const tips = [
+    "Adjust your right knee — keep it tracking over the second toe on landing.",
+    "Improve upper-body posture: chin tucked, eyes level, shoulders relaxed.",
+    "Hold hip rotation 120 ms longer before contact for cleaner power transfer.",
+    "Soften the grip during recovery — your forearm tension spikes between shots.",
+  ];
+  return (
+    <section className="mt-10 overflow-hidden rounded-2xl border hairline bg-card p-7">
+      <div className="flex items-center gap-3">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
+          <Lightbulb className="h-4 w-4" />
+        </span>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-court">AI suggestions</p>
+          <p className="text-[14px] text-muted-foreground">Refinements composed for your next session.</p>
+        </div>
+      </div>
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+        {tips.map((t, i) => (
+          <li
+            key={i}
+            className="group flex items-start gap-3 rounded-xl border hairline bg-background/40 p-4 transition hover:border-court/40 hover:bg-card"
+          >
+            <span className="mt-1 grid h-5 w-5 place-items-center rounded-full bg-court text-ink text-[10px] font-medium">
+              {i + 1}
+            </span>
+            <p className="text-[14px] leading-relaxed text-foreground/90">{t}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
