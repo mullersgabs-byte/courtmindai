@@ -7,6 +7,10 @@ import {
 } from "lucide-react";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 
+// Public sample MP4 used for the analysis playback demo.
+const SAMPLE_VIDEO =
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBigBuckBunny.mp4";
+
 export const Route = createFileRoute("/analyze")({
   head: () => ({
     meta: [
@@ -199,8 +203,49 @@ function AnalyzingView({ progress, status }: { progress: number; status: string 
 
 /* ============== RESULT ============== */
 function ResultView({ onReset }: { onReset: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [t, setT] = useState(0);          // currentTime in seconds
+  const [duration, setDuration] = useState(0);
+
+  // Sync UI <-> <video>
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onTime = () => setT(v.currentTime);
+    const onMeta = () => setDuration(v.duration || 0);
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("loadedmetadata", onMeta);
+    v.addEventListener("play", onPlay);
+    v.addEventListener("pause", onPause);
+    // try autoplay (muted is required by most browsers)
+    v.muted = true;
+    v.play().catch(() => {});
+    return () => {
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("loadedmetadata", onMeta);
+      v.removeEventListener("play", onPlay);
+      v.removeEventListener("pause", onPause);
+    };
+  }, []);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play(); else v.pause();
+  };
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const v = videoRef.current;
+    if (!v || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    v.currentTime = pct * duration;
+  };
+
+  const progress = duration ? t / duration : 0;
 
   return (
     <div className="animate-float-up">
@@ -220,34 +265,68 @@ function ResultView({ onReset }: { onReset: () => void }) {
       </div>
 
       {/* Video + overlay */}
-      <div ref={containerRef} className="relative mt-10 overflow-hidden rounded-3xl border hairline bg-card">
+      <div className="relative mt-10 overflow-hidden rounded-3xl border hairline bg-card">
         <div className="relative aspect-video">
-          <img src={heroAthlete} alt="Training analysis" className="absolute inset-0 h-full w-full object-cover" />
-          {/* overlay marks */}
-          <PoseOverlay />
+          <video
+            ref={videoRef}
+            src={SAMPLE_VIDEO}
+            poster={heroAthlete}
+            playsInline
+            loop
+            muted
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* live overlay marks driven by video time */}
+          <PoseOverlay time={t} duration={duration || 1} />
           {/* HUD */}
           <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-court animate-pulse-court" /> Pose tracking
           </div>
-          <div className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full glass px-3 py-1.5 text-[11px] text-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-court" /> AI overlay
+          <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-[11px] text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-court" /> AI overlay · live
           </div>
+          {/* live cue caption (top-center) */}
+          <LiveCue time={t} />
 
           {/* timeline */}
           <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 bg-gradient-to-t from-background to-transparent p-5">
             <button
-              onClick={() => setPlaying((p) => !p)}
+              onClick={togglePlay}
               className="grid h-10 w-10 place-items-center rounded-full bg-court text-ink glow-court-soft"
             >
               {playing ? <Pause className="h-4 w-4 fill-ink" /> : <Play className="h-4 w-4 fill-ink" />}
             </button>
             <div className="flex-1">
-              <div className="relative h-1 rounded-full bg-foreground/15">
-                <div className="absolute inset-y-0 left-0 w-2/3 rounded-full bg-court glow-court-soft" />
-                <span className="absolute -top-1 left-2/3 h-3 w-3 -translate-x-1/2 rounded-full bg-court ring-2 ring-background" />
+              <div
+                onClick={seek}
+                className="relative h-2 cursor-pointer rounded-full bg-foreground/15"
+              >
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-court glow-court-soft"
+                  style={{ width: `${progress * 100}%` }}
+                />
+                {/* event markers on timeline */}
+                {EVENT_MARKERS.map((m) => (
+                  <span
+                    key={m.at}
+                    title={m.label}
+                    className={`absolute top-1/2 h-2.5 w-0.5 -translate-y-1/2 ${
+                      m.tone === "danger" ? "bg-danger"
+                      : m.tone === "warn"  ? "bg-warn"
+                      :                      "bg-success"
+                    }`}
+                    style={{ left: `${m.at * 100}%`, opacity: 0.9 }}
+                  />
+                ))}
+                <span
+                  className="absolute -top-1 h-4 w-4 -translate-x-1/2 rounded-full bg-court ring-2 ring-background"
+                  style={{ left: `${progress * 100}%` }}
+                />
               </div>
             </div>
-            <p className="text-[12px] tabular-nums text-foreground/80">0:24 / 0:36</p>
+            <p className="text-[12px] tabular-nums text-foreground/80">
+              {fmt(t)} / {fmt(duration)}
+            </p>
           </div>
         </div>
       </div>
@@ -347,6 +426,36 @@ function ResultView({ onReset }: { onReset: () => void }) {
   );
 }
 
+/* ---------- helpers ---------- */
+function fmt(s: number) {
+  if (!isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${m}:${r.toString().padStart(2, "0")}`;
+}
+
+// Normalised timeline events (0..1 of duration) — drive markers + cues
+type EventTone = "success" | "warn" | "danger";
+const EVENT_MARKERS: { at: number; tone: EventTone; label: string }[] = [
+  { at: 0.18, tone: "success", label: "Stable shoulder line" },
+  { at: 0.36, tone: "warn",    label: "Knee tracks inward" },
+  { at: 0.55, tone: "danger",  label: "Hip rotation opens early" },
+  { at: 0.74, tone: "success", label: "Balanced foot recovery" },
+  { at: 0.9,  tone: "warn",    label: "Recovery step short" },
+];
+
+function LiveCue({ time }: { time: number }) {
+  // Find the most recent event within a 1.2s window
+  const cue = (() => {
+    const all = EVENT_MARKERS.map((m) => ({ ...m, abs: m.at })); // resolved later
+    return all;
+  })();
+  // We need duration to map; LiveCue receives time only — derive from PoseOverlay context via window flag
+  // Simpler: render the cue inside PoseOverlay since it has duration.
+  void cue;
+  return null;
+}
+
 function Metric({
   icon, label, value, unit,
 }: { icon: React.ReactNode; label: string; value: string; unit: string }) {
@@ -365,71 +474,190 @@ function Metric({
 }
 
 /* ---------- SVG Pose Overlay ---------- */
-function PoseOverlay() {
-  // Simulated joints (percentages of container)
-  const joints = {
-    head: [50, 18],
-    neck: [50, 26],
-    lShoulder: [44, 30], rShoulder: [56, 30],
-    lElbow: [38, 42], rElbow: [62, 42],
-    lHand: [33, 54], rHand: [67, 52],
-    hip: [50, 52],
-    lHipJ: [46, 53], rHipJ: [54, 53],
-    lKnee: [44, 70], rKnee: [56, 70],
-    lFoot: [42, 88], rFoot: [58, 88],
-  } as const;
+/* ---------- SVG Pose Overlay (live, time-driven) ---------- */
+type Joints = {
+  head: [number, number]; neck: [number, number];
+  lShoulder: [number, number]; rShoulder: [number, number];
+  lElbow: [number, number]; rElbow: [number, number];
+  lHand: [number, number]; rHand: [number, number];
+  hip: [number, number];
+  lHipJ: [number, number]; rHipJ: [number, number];
+  lKnee: [number, number]; rKnee: [number, number];
+  lFoot: [number, number]; rFoot: [number, number];
+};
 
-  const lines: [keyof typeof joints, keyof typeof joints][] = [
-    ["head", "neck"],
-    ["neck", "lShoulder"], ["neck", "rShoulder"],
-    ["lShoulder", "lElbow"], ["lElbow", "lHand"],
-    ["rShoulder", "rElbow"], ["rElbow", "rHand"],
-    ["neck", "hip"],
-    ["hip", "lHipJ"], ["hip", "rHipJ"],
-    ["lHipJ", "lKnee"], ["lKnee", "lFoot"],
-    ["rHipJ", "rKnee"], ["rKnee", "rFoot"],
-  ];
+// Two keyposes that we cycle through with a sinusoidal interpolation,
+// so the skeleton subtly moves with the playback.
+const POSE_A: Joints = {
+  head: [50, 18], neck: [50, 26],
+  lShoulder: [44, 30], rShoulder: [56, 30],
+  lElbow: [38, 42], rElbow: [62, 42],
+  lHand: [33, 54], rHand: [67, 52],
+  hip: [50, 52],
+  lHipJ: [46, 53], rHipJ: [54, 53],
+  lKnee: [44, 70], rKnee: [56, 70],
+  lFoot: [42, 88], rFoot: [58, 88],
+};
+const POSE_B: Joints = {
+  head: [52, 19], neck: [52, 27],
+  lShoulder: [46, 31], rShoulder: [58, 31],
+  lElbow: [40, 44], rElbow: [66, 40],
+  lHand: [36, 56], rHand: [72, 47],
+  hip: [52, 53],
+  lHipJ: [48, 54], rHipJ: [56, 54],
+  lKnee: [45, 71], rKnee: [60, 69],
+  lFoot: [43, 89], rFoot: [62, 88],
+};
+
+const LINES: [keyof Joints, keyof Joints][] = [
+  ["head", "neck"],
+  ["neck", "lShoulder"], ["neck", "rShoulder"],
+  ["lShoulder", "lElbow"], ["lElbow", "lHand"],
+  ["rShoulder", "rElbow"], ["rElbow", "rHand"],
+  ["neck", "hip"],
+  ["hip", "lHipJ"], ["hip", "rHipJ"],
+  ["lHipJ", "lKnee"], ["lKnee", "lFoot"],
+  ["rHipJ", "rKnee"], ["rKnee", "rFoot"],
+];
+
+function lerp(a: number, b: number, k: number) { return a + (b - a) * k; }
+function lerpPt(a: [number, number], b: [number, number], k: number): [number, number] {
+  return [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+}
+
+function angleAt(p: [number, number], q: [number, number], r: [number, number]) {
+  const v1 = [p[0] - q[0], p[1] - q[1]];
+  const v2 = [r[0] - q[0], r[1] - q[1]];
+  const dot = v1[0] * v2[0] + v1[1] * v2[1];
+  const m1 = Math.hypot(v1[0], v1[1]);
+  const m2 = Math.hypot(v2[0], v2[1]);
+  const c = Math.max(-1, Math.min(1, dot / (m1 * m2 || 1)));
+  return Math.round((Math.acos(c) * 180) / Math.PI);
+}
+
+function PoseOverlay({ time, duration }: { time: number; duration: number }) {
+  // 0..1 oscillation between the two keyposes
+  const k = 0.5 - 0.5 * Math.cos((time % 2) * Math.PI); // ~2s cycle
+
+  const joints: Joints = {
+    head: lerpPt(POSE_A.head, POSE_B.head, k),
+    neck: lerpPt(POSE_A.neck, POSE_B.neck, k),
+    lShoulder: lerpPt(POSE_A.lShoulder, POSE_B.lShoulder, k),
+    rShoulder: lerpPt(POSE_A.rShoulder, POSE_B.rShoulder, k),
+    lElbow: lerpPt(POSE_A.lElbow, POSE_B.lElbow, k),
+    rElbow: lerpPt(POSE_A.rElbow, POSE_B.rElbow, k),
+    lHand: lerpPt(POSE_A.lHand, POSE_B.lHand, k),
+    rHand: lerpPt(POSE_A.rHand, POSE_B.rHand, k),
+    hip: lerpPt(POSE_A.hip, POSE_B.hip, k),
+    lHipJ: lerpPt(POSE_A.lHipJ, POSE_B.lHipJ, k),
+    rHipJ: lerpPt(POSE_A.rHipJ, POSE_B.rHipJ, k),
+    lKnee: lerpPt(POSE_A.lKnee, POSE_B.lKnee, k),
+    rKnee: lerpPt(POSE_A.rKnee, POSE_B.rKnee, k),
+    lFoot: lerpPt(POSE_A.lFoot, POSE_B.lFoot, k),
+    rFoot: lerpPt(POSE_A.rFoot, POSE_B.rFoot, k),
+  };
+
+  // Live computed angles
+  const elbowAngle = angleAt(joints.rShoulder, joints.rElbow, joints.rHand);
+  const kneeAngle = angleAt(joints.rHipJ, joints.rKnee, joints.rFoot);
+
+  // Active event = closest marker within ±0.06 of normalised time
+  const norm = duration ? Math.min(1, time / duration) : 0;
+  const active = EVENT_MARKERS.find((m) => Math.abs(m.at - norm) < 0.05) ?? null;
+
+  const toneColor =
+    active?.tone === "danger" ? "var(--danger)" :
+    active?.tone === "warn"   ? "var(--warn)"   :
+    "var(--court)";
 
   return (
-    <svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      style={{ filter: "drop-shadow(0 0 4px var(--court))" }}
-    >
-      {lines.map(([a, b], i) => {
-        const [ax, ay] = joints[a];
-        const [bx, by] = joints[b];
-        return (
-          <line
-            key={i}
-            x1={ax} y1={ay} x2={bx} y2={by}
-            stroke="var(--court)" strokeWidth="0.4" strokeLinecap="round"
-            opacity="0.9"
-          />
-        );
-      })}
-      {Object.entries(joints).map(([k, [x, y]]) => (
-        <circle key={k} cx={x} cy={y} r="0.7" fill="var(--court)" />
-      ))}
-      {/* Angle indicator at right elbow */}
-      <g>
-        <path
-          d="M 62 42 A 4 4 0 0 1 67 45"
-          fill="none" stroke="var(--court)" strokeWidth="0.3" opacity="0.8"
+    <>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        style={{ filter: `drop-shadow(0 0 4px ${toneColor})` }}
+      >
+        {/* center of mass guideline */}
+        <line
+          x1={joints.hip[0]} y1={0} x2={joints.hip[0]} y2={100}
+          stroke={toneColor} strokeWidth="0.15" strokeDasharray="0.6 0.8" opacity="0.5"
         />
-        <text x="68.5" y="45" fontSize="2.2" fill="var(--court)" fontFamily="Inter, sans-serif">
-          112°
-        </text>
-      </g>
-      {/* Hip rotation marker */}
-      <g>
-        <circle cx="50" cy="52" r="2.5" fill="none" stroke="var(--court)" strokeWidth="0.25" strokeDasharray="0.6 0.6" />
-        <text x="54" y="52.8" fontSize="2" fill="var(--court)" fontFamily="Inter, sans-serif">
-          hip · early
-        </text>
-      </g>
-    </svg>
+        {/* shoulder line (balance) */}
+        <line
+          x1={joints.lShoulder[0]} y1={joints.lShoulder[1]}
+          x2={joints.rShoulder[0]} y2={joints.rShoulder[1]}
+          stroke={toneColor} strokeWidth="0.25" strokeDasharray="0.5 0.6" opacity="0.7"
+        />
+
+        {/* skeleton */}
+        {LINES.map(([a, b], i) => {
+          const [ax, ay] = joints[a];
+          const [bx, by] = joints[b];
+          return (
+            <line
+              key={i}
+              x1={ax} y1={ay} x2={bx} y2={by}
+              stroke={toneColor} strokeWidth="0.4" strokeLinecap="round"
+              opacity="0.95"
+            />
+          );
+        })}
+        {Object.entries(joints).map(([key, [x, y]]) => (
+          <circle key={key} cx={x} cy={y} r="0.7" fill={toneColor} />
+        ))}
+
+        {/* live elbow angle */}
+        <g>
+          <circle cx={joints.rElbow[0]} cy={joints.rElbow[1]} r="2.2"
+            fill="none" stroke={toneColor} strokeWidth="0.25" strokeDasharray="0.6 0.6" />
+          <text
+            x={joints.rElbow[0] + 3} y={joints.rElbow[1] + 1}
+            fontSize="2.2" fill={toneColor} fontFamily="Inter, sans-serif"
+          >
+            {elbowAngle}° elbow
+          </text>
+        </g>
+
+        {/* live knee angle */}
+        <g>
+          <circle cx={joints.rKnee[0]} cy={joints.rKnee[1]} r="2"
+            fill="none" stroke={toneColor} strokeWidth="0.25" strokeDasharray="0.6 0.6" />
+          <text
+            x={joints.rKnee[0] + 3} y={joints.rKnee[1] + 1}
+            fontSize="2" fill={toneColor} fontFamily="Inter, sans-serif"
+          >
+            {kneeAngle}° knee
+          </text>
+        </g>
+
+        {/* hip rotation marker */}
+        <g>
+          <circle cx={joints.hip[0]} cy={joints.hip[1]} r="2.5"
+            fill="none" stroke={toneColor} strokeWidth="0.3" strokeDasharray="0.6 0.6" />
+        </g>
+      </svg>
+
+      {/* Live cue caption — top-center, fades when an event is active */}
+      {active && (
+        <div className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 animate-fade-in">
+          <div
+            className="rounded-full glass px-4 py-2 text-[12px] font-medium uppercase tracking-[0.18em]"
+            style={{
+              color: toneColor,
+              boxShadow: `0 0 24px ${toneColor}40`,
+              borderColor: `${toneColor}60`,
+            }}
+          >
+            <span
+              className="mr-2 inline-block h-1.5 w-1.5 rounded-full align-middle"
+              style={{ background: toneColor, boxShadow: `0 0 8px ${toneColor}` }}
+            />
+            {active.label}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
