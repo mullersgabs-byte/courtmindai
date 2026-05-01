@@ -17,7 +17,28 @@ export const Route = createFileRoute("/plan")({
   component: PlanPage,
 });
 
-const SPORTS = ["Tennis", "Running", "Strength", "Football", "Pilates", "Swimming", "Cycling", "Climbing"];
+const SPORTS = [
+  "Tennis",
+  "Volleyball",
+  "Beach Volleyball",
+  "Padel",
+  "Basketball",
+  "Football",
+  "Running",
+  "Cycling",
+  "Swimming",
+  "Strength",
+  "CrossFit",
+  "Pilates",
+  "Yoga",
+  "Boxing",
+  "MMA",
+  "Climbing",
+  "Surf",
+  "Skate",
+  "Golf",
+  "Triathlon",
+];
 const LEVELS: Array<{ id: "beginner"|"intermediate"|"advanced"; label: string; sub: string }> = [
   { id: "beginner", label: "Beginner", sub: "Building base" },
   { id: "intermediate", label: "Intermediate", sub: "Refining form" },
