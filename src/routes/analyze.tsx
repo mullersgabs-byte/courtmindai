@@ -285,9 +285,6 @@ function ResultView({ onReset }: { onReset: () => void }) {
           <div className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-[11px] text-foreground">
             <Sparkles className="h-3.5 w-3.5 text-court" /> AI overlay · live
           </div>
-          {/* live cue caption (top-center) */}
-          <LiveCue time={t} />
-
           {/* timeline */}
           <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 bg-gradient-to-t from-background to-transparent p-5">
             <button
@@ -443,18 +440,6 @@ const EVENT_MARKERS: { at: number; tone: EventTone; label: string }[] = [
   { at: 0.74, tone: "success", label: "Balanced foot recovery" },
   { at: 0.9,  tone: "warn",    label: "Recovery step short" },
 ];
-
-function LiveCue({ time }: { time: number }) {
-  // Find the most recent event within a 1.2s window
-  const cue = (() => {
-    const all = EVENT_MARKERS.map((m) => ({ ...m, abs: m.at })); // resolved later
-    return all;
-  })();
-  // We need duration to map; LiveCue receives time only — derive from PoseOverlay context via window flag
-  // Simpler: render the cue inside PoseOverlay since it has duration.
-  void cue;
-  return null;
-}
 
 function Metric({
   icon, label, value, unit,
