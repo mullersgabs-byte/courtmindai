@@ -289,18 +289,44 @@ function TrainingPage() {
 
 /* ---------- Daily check-in ---------- */
 function DailyCheckIn() {
-  const [days, setDays] = useState<boolean[]>([true, true, true, true, false, false, false]);
-  const [today, setToday] = useState(3); // Thursday
-  const [energy, setEnergy] = useState(3);
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
+  const [today, setToday] = useState(0);
+  const [energy, setEnergy] = useState(3);
+  const [soreness, setSoreness] = useState(1);
+  const [days, setDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
+  const [todayDate, setTodayDate] = useState<string>(isoDate());
 
+  // Hydrate the whole week from localStorage so check-ins persist across sessions.
   useEffect(() => {
-    setToday(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+    const now = new Date();
+    const dayIdx = (now.getDay() + 6) % 7; // 0=Mon
+    setToday(dayIdx);
+    setTodayDate(isoDate(now));
+
+    const week = getWeekCheckIns(now);
+    const start = weekStart(now);
+    const next = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return Boolean(week.days[isoDate(d)]);
+    });
+    setDays(next);
+
+    const todayEntry = week.days[isoDate(now)];
+    if (todayEntry) {
+      setEnergy(todayEntry.energy);
+      if (typeof todayEntry.soreness === "number") setSoreness(todayEntry.soreness);
+    }
   }, []);
 
-  const checkIn = () => {
-    setDays((d) => d.map((v, i) => (i === today ? true : v)));
-  };
+  // Auto-save the daily check-in whenever the athlete moves the energy or
+  // soreness sliders. The whole week is persisted client-side.
+  useEffect(() => {
+    if (!todayDate) return;
+    saveDailyCheckIn({ date: todayDate, energy, soreness });
+    setDays((prev) => prev.map((v, i) => (i === today ? true : v)));
+  }, [energy, soreness, todayDate, today]);
+
   const checkedToday = days[today];
 
   return (
@@ -358,7 +384,7 @@ function DailyCheckIn() {
       </div>
 
       <button
-        onClick={checkIn}
+        onClick={() => saveDailyCheckIn({ date: todayDate, energy, soreness })}
         disabled={checkedToday}
         className={[
           "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-[14px] font-medium transition",
@@ -367,8 +393,29 @@ function DailyCheckIn() {
             : "bg-court text-ink hover:opacity-90 glow-court",
         ].join(" ")}
       >
-        {checkedToday ? <> Checked in</> : <> Check in for today</>}
+        {checkedToday ? <>Saved · auto-synced</> : <>Save check-in</>}
       </button>
+
+      {/* Soreness slider */}
+      <div className="mt-5">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Soreness</p>
+          <p className="text-[12px] text-foreground">{["None","Mild","Moderate","High","Extreme"][soreness]}</p>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          {[0,1,2,3,4].map((i) => (
+            <button
+              key={i}
+              onClick={() => setSoreness(i)}
+              className={[
+                "h-1.5 flex-1 rounded-full transition",
+                i <= soreness ? "bg-warn" : "bg-foreground/10 hover:bg-foreground/20",
+              ].join(" ")}
+              aria-label={`Soreness ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
