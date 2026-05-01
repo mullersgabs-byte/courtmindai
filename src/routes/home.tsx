@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import heroAthlete from "@/assets/hero-athlete.jpg";
 import sportTennis from "@/assets/sport-tennis.jpg";
 import sportGym from "@/assets/sport-gym.jpg";
@@ -46,6 +47,7 @@ function HomePage() {
             <Link to="/profile" className="transition hover:text-foreground">Profile</Link>
           </nav>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Avatar />
           </div>
         </div>
@@ -144,7 +146,7 @@ function HomePage() {
         <section className="pb-16">
           <div className="flex items-end justify-between">
             <SectionLabel>Continue where you left off</SectionLabel>
-            <a href="#" className="text-[12px] text-muted-foreground transition hover:text-foreground">View all →</a>
+            <Link to="/training" className="text-[12px] text-muted-foreground transition hover:text-foreground">View all →</Link>
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -161,7 +163,7 @@ function HomePage() {
         <section className="pb-16">
           <div className="flex items-end justify-between">
             <SectionLabel>Recommended programs</SectionLabel>
-            <a href="#" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</a>
+            <Link to="/plan" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</Link>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <ProgramCard img={sportTennis} tag="Tennis" t="Elite Baseline" w="6 weeks" />
