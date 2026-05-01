@@ -646,3 +646,125 @@ function DotsChart({ count, active }: { count: number; active: number }) {
     </div>
   );
 }
+
+/* ---------- Session log modal (RPE · real duration · notes) ---------- */
+function SessionLogModal({
+  session,
+  onClose,
+  onSave,
+}: {
+  session: Session;
+  onClose: () => void;
+  onSave: (payload: { actualMinutes: number; rpe: number; notes: string }) => void;
+}) {
+  const [rpe, setRpe] = useState(7);
+  const [actual, setActual] = useState(session.durationMinutes);
+  const [notes, setNotes] = useState("");
+
+  const rpeLabel =
+    rpe <= 3 ? "Very easy" :
+    rpe <= 5 ? "Easy" :
+    rpe <= 7 ? "Moderate" :
+    rpe <= 9 ? "Hard" : "Maximal";
+  const rpeTone =
+    rpe <= 5 ? "text-success" : rpe <= 7 ? "text-warn" : "text-danger";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/70 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-md rounded-3xl border hairline bg-card p-6 shadow-2xl animate-float-up sm:p-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-court">Log this session</p>
+            <h3 className="mt-2 text-[18px] font-medium tracking-tight">{session.title}</h3>
+            <p className="text-[12px] text-muted-foreground">{session.sport} · planned {session.durationMinutes} min</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full border hairline px-3 py-1 text-[12px] text-muted-foreground transition hover:text-foreground"
+          >
+            Close
+          </button>
+        </div>
+
+        {/* Actual duration */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Real duration</p>
+            <p className="text-[13px] text-foreground">{actual} min</p>
+          </div>
+          <input
+            type="range" min={5} max={180} step={5} value={actual}
+            onChange={(e) => setActual(Number(e.target.value))}
+            className="mt-3 w-full accent-[var(--court)]"
+            style={{ colorScheme: "dark" }}
+          />
+        </div>
+
+        {/* RPE */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">RPE · perceived effort</p>
+            <p className={`text-[13px] ${rpeTone}`}>{rpe}/10 · {rpeLabel}</p>
+          </div>
+          <div className="mt-3 grid grid-cols-10 gap-1.5">
+            {Array.from({ length: 10 }).map((_, i) => {
+              const n = i + 1;
+              const active = n <= rpe;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRpe(n)}
+                  className={[
+                    "h-8 rounded-md text-[11px] font-medium transition",
+                    active
+                      ? n <= 5
+                        ? "bg-success/80 text-ink"
+                        : n <= 7
+                          ? "bg-warn/80 text-ink"
+                          : "bg-danger/80 text-ink"
+                      : "border hairline text-muted-foreground hover:border-court/30",
+                  ].join(" ")}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="mt-5">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Notes</p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
+            placeholder="How did it feel? Any pain, breakthrough, technical cue?"
+            rows={3}
+            className="mt-2 w-full resize-none rounded-xl border hairline bg-background px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:border-court/50 focus:outline-none focus:ring-1 focus:ring-court/40"
+          />
+          <p className="mt-1 text-right text-[10px] text-muted-foreground">{notes.length}/500</p>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-full px-4 py-2.5 text-[13px] text-muted-foreground transition hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave({ actualMinutes: actual, rpe, notes: notes.trim() })}
+            className="rounded-full bg-court px-5 py-2.5 text-[13px] font-medium text-ink transition hover:opacity-90 glow-court-soft"
+          >
+            Save & complete
+          </button>
+        </div>
+
+        <p className="mt-4 text-center text-[11px] text-muted-foreground">
+          Logs feed your weekly plan — better data, better plans.
+        </p>
+      </div>
+    </div>
+  );
+}
