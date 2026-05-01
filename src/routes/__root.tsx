@@ -1,15 +1,17 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
+import { I18nProvider, useT } from "@/lib/i18n";
 
 function NotFoundComponent() {
+  const { t } = useT();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-medium tracking-tight text-platinum-gradient">404</h1>
-        <p className="mt-4 text-sm text-muted-foreground">This page doesn't exist.</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t("notfound.title")}</p>
         <div className="mt-6">
           <Link to="/" className="inline-flex items-center justify-center rounded-full bg-bone px-5 py-2.5 text-sm font-medium text-ink transition hover:opacity-90">
-            Return home
+            {t("notfound.cta")}
           </Link>
         </div>
       </div>
@@ -32,7 +34,11 @@ export const Route = createRootRoute({
     links: [{ rel: "stylesheet", href: appCss }],
   }),
   shellComponent: RootShell,
-  component: () => <Outlet />,
+  component: () => (
+    <I18nProvider>
+      <Outlet />
+    </I18nProvider>
+  ),
   notFoundComponent: NotFoundComponent,
 });
 
