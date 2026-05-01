@@ -39,6 +39,7 @@ function HomePage() {
           </Link>
           <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
             <Link to="/home" className="text-foreground">Home</Link>
+            <Link to="/training" className="transition hover:text-foreground">Training</Link>
             <Link to="/analyze" className="transition hover:text-foreground">Analyze</Link>
             <Link to="/dashboard" className="transition hover:text-foreground">Plan</Link>
             <a className="transition hover:text-foreground" href="#">Archive</a>
