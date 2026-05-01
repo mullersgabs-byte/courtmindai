@@ -13,6 +13,7 @@ import { Route as TrainingRouteImport } from './routes/training'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as ExerciseRouteImport } from './routes/exercise'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalyzeRouteImport } from './routes/analyze'
@@ -36,6 +37,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExerciseRoute = ExerciseRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
   '/exercise': typeof ExerciseRoute
+  '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
   '/exercise': typeof ExerciseRoute
+  '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/analyze': typeof AnalyzeRoute
   '/dashboard': typeof DashboardRoute
   '/exercise': typeof ExerciseRoute
+  '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/dashboard'
     | '/exercise'
+    | '/history'
     | '/home'
     | '/onboarding'
     | '/plan'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/dashboard'
     | '/exercise'
+    | '/history'
     | '/home'
     | '/onboarding'
     | '/plan'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/dashboard'
     | '/exercise'
+    | '/history'
     | '/home'
     | '/onboarding'
     | '/plan'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AnalyzeRoute: typeof AnalyzeRoute
   DashboardRoute: typeof DashboardRoute
   ExerciseRoute: typeof ExerciseRoute
+  HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
   PlanRoute: typeof PlanRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercise': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyzeRoute: AnalyzeRoute,
   DashboardRoute: DashboardRoute,
   ExerciseRoute: ExerciseRoute,
+  HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
   PlanRoute: PlanRoute,
@@ -208,3 +229,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

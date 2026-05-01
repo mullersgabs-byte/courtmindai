@@ -42,7 +42,7 @@ function HomePage() {
             <Link to="/training" className="transition hover:text-foreground">Training</Link>
             <Link to="/analyze" className="transition hover:text-foreground">Analyze</Link>
             <Link to="/plan" className="transition hover:text-foreground">Plan</Link>
-            <a className="transition hover:text-foreground" href="#">Archive</a>
+            <Link to="/history" className="transition hover:text-foreground">Archive</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Avatar />

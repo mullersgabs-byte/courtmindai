@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, Calendar, Clock, TrendingUp, TrendingDown, Minus,
-  Activity, Trash2, ChevronRight, GitCompare, Video, Dumbbell, AlertCircle,
+  Activity, Trash2, GitCompare, Video, Dumbbell,
 } from "lucide-react";
 import { listAnalyses, type AnalysisRow } from "@/server/history.functions";
 
