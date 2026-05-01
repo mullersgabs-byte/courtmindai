@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrainingRouteImport } from './routes/training'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
@@ -22,6 +23,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlanRoute = PlanRouteImport.update({
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/training': typeof TrainingRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/onboarding'
     | '/plan'
+    | '/profile'
     | '/training'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/onboarding'
     | '/plan'
+    | '/profile'
     | '/training'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/onboarding'
     | '/plan'
+    | '/profile'
     | '/training'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
   PlanRoute: typeof PlanRoute
+  ProfileRoute: typeof ProfileRoute
   TrainingRoute: typeof TrainingRoute
 }
 
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/training'
       fullPath: '/training'
       preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plan': {
@@ -224,8 +244,18 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
   PlanRoute: PlanRoute,
+  ProfileRoute: ProfileRoute,
   TrainingRoute: TrainingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
