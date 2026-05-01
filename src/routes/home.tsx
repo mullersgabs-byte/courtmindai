@@ -312,8 +312,8 @@ function ProgressLine({ value, label }: { value: number; label: string }) {
 
 function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: number }) {
   return (
-    <a
-      href="#"
+    <Link
+      to="/training"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court"
     >
       <div className="relative aspect-[4/5] overflow-hidden">
@@ -330,14 +330,14 @@ function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: 
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; w: string }) {
   return (
-    <a
-      href="#"
+    <Link
+      to="/plan"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:-translate-y-0.5 hover:glow-court"
     >
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -351,13 +351,13 @@ function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; 
           <p className="mt-0.5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{w}</p>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function AestheticCard({ img, title, meta }: { img: string; title: string; meta: string }) {
   return (
-    <a href="#" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
+    <Link to="/history" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
       <div className="relative aspect-[5/4] overflow-hidden">
         <img src={img} alt={title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
       </div>
@@ -365,6 +365,6 @@ function AestheticCard({ img, title, meta }: { img: string; title: string; meta:
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{meta}</p>
         <p className="mt-2 text-[16px] font-medium tracking-tight">{title}</p>
       </div>
-    </a>
+    </Link>
   );
 }
