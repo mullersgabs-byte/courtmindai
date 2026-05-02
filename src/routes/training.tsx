@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 <div style={{color: "white"}}>Avatar novo em breve</div>
-import {
+import { UPDATE TRAINING PAGE}}>Remove avatar bugado</div>
   addSessionLog,
   getWeekCheckIns,
   saveDailyCheckIn,
