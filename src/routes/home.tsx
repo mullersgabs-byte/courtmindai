@@ -2,15 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import heroAthlete from "@/assets/hero-athlete.jpg";
-import sportTennis from "@/assets/sport-tennis.jpg";
-import sportGym from "@/assets/sport-gym.jpg";
-import sportRunning from "@/assets/sport-running.jpg";
-import sportFootball from "@/assets/sport-football.jpg";
-import train1 from "@/assets/train-1.jpg";
-import train2 from "@/assets/train-2.jpg";
-import train3 from "@/assets/train-3.jpg";
-import train4 from "@/assets/train-4.jpg";
+import { SportAvatar } from "@/components/SportAvatar";
 
 export const Route = createFileRoute("/home")({
   head: () => ({
@@ -84,13 +76,11 @@ function HomePage() {
           <SectionLabel>Today's training</SectionLabel>
           <div className="group relative mt-5 overflow-hidden rounded-3xl border hairline bg-card transition hover:glow-court">
             <div className="grid lg:grid-cols-[1.2fr_1fr]">
-              <div className="relative aspect-[4/3] lg:aspect-auto">
-                <img
-                  src={heroAthlete}
-                  alt="Athlete training session"
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+              <div className="relative aspect-[4/3] lg:aspect-auto bg-radial-court">
+                <div className="absolute inset-0 grid place-items-center">
+                  <SportAvatar sport="tennis" size="xl" showReference />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-court animate-pulse-court" /> Live plan
                 </div>
@@ -150,9 +140,9 @@ function HomePage() {
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { img: train1, t: "Crosscourt depth", d: "Tennis · 12 min left", p: 64 },
-              { img: train2, t: "Hip mobility flow", d: "Recovery · 6 min left", p: 80 },
-              { img: train3, t: "Sprint intervals", d: "Running · 18 min left", p: 32 },
+              { sport: "tennis", t: "Crosscourt depth", d: "Tennis · 12 min left", p: 64 },
+              { sport: "yoga", t: "Hip mobility flow", d: "Recovery · 6 min left", p: 80 },
+              { sport: "running", t: "Sprint intervals", d: "Running · 18 min left", p: 32 },
             ].map((c) => (
               <ContinueCard key={c.t} {...c} />
             ))}
@@ -166,10 +156,10 @@ function HomePage() {
             <Link to="/plan" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</Link>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ProgramCard img={sportTennis} tag="Tennis" t="Elite Baseline" w="6 weeks" />
-            <ProgramCard img={sportGym} tag="Strength" t="Athletic Power" w="8 weeks" />
-            <ProgramCard img={sportRunning} tag="Running" t="VO2 Foundation" w="4 weeks" />
-            <ProgramCard img={sportFootball} tag="Football" t="Explosive Agility" w="5 weeks" />
+            <ProgramCard sport="tennis" tag="Tennis" t="Elite Baseline" w="6 weeks" />
+            <ProgramCard sport="gym" tag="Strength" t="Athletic Power" w="8 weeks" />
+            <ProgramCard sport="running" tag="Running" t="VO2 Foundation" w="4 weeks" />
+            <ProgramCard sport="football" tag="Football" t="Explosive Agility" w="5 weeks" />
           </div>
         </section>
 
@@ -177,9 +167,9 @@ function HomePage() {
         <section className="pb-20">
           <SectionLabel>From the journal</SectionLabel>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <AestheticCard img={train4} title="The art of the warm-up" meta="Read · 4 min" />
-            <AestheticCard img={train2} title="Recovery, redefined" meta="Read · 6 min" />
-            <AestheticCard img={train3} title="Why slow runs win" meta="Read · 5 min" />
+            <AestheticCard sport="gym" title="The art of the warm-up" meta="Read · 4 min" />
+            <AestheticCard sport="yoga" title="Recovery, redefined" meta="Read · 6 min" />
+            <AestheticCard sport="running" title="Why slow runs win" meta="Read · 5 min" />
           </div>
         </section>
 
@@ -310,15 +300,17 @@ function ProgressLine({ value, label }: { value: number; label: string }) {
   );
 }
 
-function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: number }) {
+function ContinueCard({ sport, t, d, p }: { sport: string; t: string; d: string; p: number }) {
   return (
     <Link
       to="/training"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court"
     >
-      <div className="relative aspect-[4/5] overflow-hidden">
-        <img src={img} alt={t} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+      <div className="relative aspect-[4/5] overflow-hidden bg-radial-court">
+        <div className="absolute inset-0 grid place-items-center">
+          <SportAvatar sport={sport} size="lg" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <button className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full glass text-foreground transition group-hover:bg-court group-hover:text-ink">
           
         </button>
@@ -334,15 +326,17 @@ function ContinueCard({ img, t, d, p }: { img: string; t: string; d: string; p: 
   );
 }
 
-function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; w: string }) {
+function ProgramCard({ sport, tag, t, w }: { sport: string; tag: string; t: string; w: string }) {
   return (
     <Link
       to="/plan"
       className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:-translate-y-0.5 hover:glow-court"
     >
-      <div className="relative aspect-[3/4] overflow-hidden">
-        <img src={img} alt={t} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent" />
+      <div className="relative aspect-[3/4] overflow-hidden bg-radial-court">
+        <div className="absolute inset-0 grid place-items-center">
+          <SportAvatar sport={sport} size="lg" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
         <span className="absolute left-3 top-3 rounded-full glass px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-foreground">
           {tag}
         </span>
@@ -355,11 +349,13 @@ function ProgramCard({ img, tag, t, w }: { img: string; tag: string; t: string; 
   );
 }
 
-function AestheticCard({ img, title, meta }: { img: string; title: string; meta: string }) {
+function AestheticCard({ sport, title, meta }: { sport: string; title: string; meta: string }) {
   return (
     <Link to="/history" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
-      <div className="relative aspect-[5/4] overflow-hidden">
-        <img src={img} alt={title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+      <div className="relative aspect-[5/4] overflow-hidden bg-radial-court">
+        <div className="absolute inset-0 grid place-items-center">
+          <SportAvatar sport={sport} size="lg" />
+        </div>
       </div>
       <div className="p-5">
         <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{meta}</p>

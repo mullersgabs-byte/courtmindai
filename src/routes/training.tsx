@@ -1,11 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import sportTennis from "@/assets/sport-tennis.jpg";
-import sportGym from "@/assets/sport-gym.jpg";
-import sportRunning from "@/assets/sport-running.jpg";
-import sportFootball from "@/assets/sport-football.jpg";
-import train1 from "@/assets/train-1.jpg";
-import train2 from "@/assets/train-2.jpg";
+import { SportAvatar } from "@/components/SportAvatar";
 import {
   addSessionLog,
   getWeekCheckIns,
@@ -35,17 +30,16 @@ type Session = {
   intensity: "Low" | "Medium" | "High";
   status: "done" | "today" | "upcoming";
   day: string;
-  img: string;
 };
 
 const initialSessions: Session[] = [
-  { id: "s1", title: "Crosscourt rally", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "done", day: "Mon", img: sportTennis },
-  { id: "s2", title: "Athletic power", sport: "Strength", duration: "55 min", durationMinutes: 55, intensity: "High", status: "done", day: "Tue", img: sportGym },
-  { id: "s3", title: "Recovery flow", sport: "Mobility", duration: "30 min", durationMinutes: 30, intensity: "Low", status: "done", day: "Wed", img: train2 },
-  { id: "s4", title: "Baseline rhythm & footwork", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "today", day: "Thu", img: sportTennis },
-  { id: "s5", title: "Sprint intervals", sport: "Running", duration: "40 min", durationMinutes: 40, intensity: "High", status: "upcoming", day: "Fri", img: sportRunning },
-  { id: "s6", title: "Long run · easy pace", sport: "Running", duration: "1h 20m", durationMinutes: 80, intensity: "Low", status: "upcoming", day: "Sat", img: train1 },
-  { id: "s7", title: "Match simulation", sport: "Football", duration: "1h 30m", durationMinutes: 90, intensity: "High", status: "upcoming", day: "Sun", img: sportFootball },
+  { id: "s1", title: "Crosscourt rally", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "done", day: "Mon" },
+  { id: "s2", title: "Athletic power", sport: "Strength", duration: "55 min", durationMinutes: 55, intensity: "High", status: "done", day: "Tue" },
+  { id: "s3", title: "Recovery flow", sport: "Mobility", duration: "30 min", durationMinutes: 30, intensity: "Low", status: "done", day: "Wed" },
+  { id: "s4", title: "Baseline rhythm & footwork", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "today", day: "Thu" },
+  { id: "s5", title: "Sprint intervals", sport: "Running", duration: "40 min", durationMinutes: 40, intensity: "High", status: "upcoming", day: "Fri" },
+  { id: "s6", title: "Long run · easy pace", sport: "Running", duration: "1h 20m", durationMinutes: 80, intensity: "Low", status: "upcoming", day: "Sat" },
+  { id: "s7", title: "Match simulation", sport: "Football", duration: "1h 30m", durationMinutes: 90, intensity: "High", status: "upcoming", day: "Sun" },
 ];
 
 const STATUS_KEY = "courtmind.training.status.v1";
@@ -489,9 +483,10 @@ function SessionRow({
       ].join(" ")}
     >
       {/* thumbnail */}
-      <div className="col-span-3 sm:col-span-2 relative aspect-[4/3] overflow-hidden rounded-xl">
-        <img src={session.img} alt={session.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent" />
+      <div className="col-span-3 sm:col-span-2 relative aspect-[4/3] overflow-hidden rounded-xl bg-radial-court">
+        <div className="absolute inset-0 grid place-items-center">
+          <SportAvatar sport={session.sport} size="sm" />
+        </div>
         <span className="absolute left-2 top-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em]">
           {session.day}
         </span>
