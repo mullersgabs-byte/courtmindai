@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
+import { SportAvatar } from "@/components/SportAvatar";
 import {
   generatePlan,
   generatePlanFromInsights,
@@ -424,16 +425,21 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
 
   return (
     <div className="overflow-hidden rounded-3xl border hairline bg-card p-7 sm:p-9">
-      <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-          
-        </span>
-        <p className="text-[11px] uppercase tracking-[0.24em] text-court">{plan.sport} · {plan.level}</p>
+      <div className="grid items-start gap-6 sm:grid-cols-[1fr_auto]">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft" />
+            <p className="text-[11px] uppercase tracking-[0.24em] text-court">{plan.sport} · {plan.level}</p>
+          </div>
+          <h2 className="mt-5 text-balance text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-tight">
+            {plan.weeklyGoal}
+          </h2>
+          <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">{plan.overview}</p>
+        </div>
+        <div className="hidden sm:block">
+          <SportAvatar sport={plan.sport} size="lg" />
+        </div>
       </div>
-      <h2 className="mt-5 text-balance text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-tight">
-        {plan.weeklyGoal}
-      </h2>
-      <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">{plan.overview}</p>
 
       <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
         <Stat label="Training days" value={`${trainDays}`} />
@@ -624,6 +630,9 @@ function NextUpAndProgress({
           <span className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
             {sport}
           </span>
+        </div>
+        <div className="mt-4 flex justify-center">
+          <SportAvatar sport={sport} size="md" showReference />
         </div>
 
         <h2 className="mt-4 text-balance text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">
