@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { SportAvatar } from "@/components/SportAvatar";
 
 export const Route = createFileRoute("/exercise")({
   head: () => ({
@@ -98,6 +99,22 @@ function ExercisePage() {
           Quick lateral hops with a controlled landing. Keeps the body loaded
           and ready for the next shot.
         </p>
+
+        {/* Avatar demonstration — main movement + small reference */}
+        <section className="mt-10 overflow-hidden rounded-3xl border hairline bg-card bg-radial-court">
+          <div className="grid items-center gap-4 p-6 sm:grid-cols-[1fr_auto] sm:p-8">
+            <div className="flex justify-center">
+              <SportAvatar sport="tennis" size="xl" />
+            </div>
+            <div className="flex flex-col items-center gap-3 sm:items-end">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Reference</p>
+              <SportAvatar sport="tennis" size="md" />
+              <p className="max-w-[180px] text-center text-[11px] text-muted-foreground sm:text-right">
+                Mirror this rhythm — feet active, hips loaded.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* meta row */}
         <ul className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10">
