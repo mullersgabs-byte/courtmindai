@@ -1,5 +1,3 @@
-import { useId } from "react";
-
 export type SportKey =
   | "tennis"
   | "gym"
