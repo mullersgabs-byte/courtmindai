@@ -9,7 +9,7 @@ import {
   type VideoEvent,
 } from "@/server/analyze.functions";
 import { saveLastAnalysis } from "@/lib/sessionStore";
-import { useT, useLang } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/analyze")({
   head: () => ({
@@ -31,8 +31,7 @@ type Phase = "input" | "preparing" | "analyzing" | "result" | "blocked" | "error
 function AnalyzePage() {
   const callFrames = useServerFn(analyzeFromFrames);
   const callText = useServerFn(analyzeWorkoutText);
-  const t = useT();
-  const lang = useLang();
+  const { lang } = useT();
 
   const [mode, setMode] = useState<Mode>("video");
   const [phase, setPhase] = useState<Phase>("input");
@@ -212,7 +211,7 @@ function AnalyzePage() {
             ← Home
           </Link>
           <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
-            {t("Análise", { en: "Analysis", es: "Análisis", fr: "Analyse" })}
+            Análise
           </p>
           <div className="w-16" />
         </div>
