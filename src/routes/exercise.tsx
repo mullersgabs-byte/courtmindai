@@ -1,8 +1,12 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SportAvatar } from "@/components/SportAvatar";
+import { lazy, Suspense } from "react";
+import { Avatar2D } from "@/components/Avatar2D";
+import { clipFor, speedFor } from "@/lib/avatarClips";
 import { EXERCISES, findExercise, type Exercise } from "@/lib/exerciseLibrary";
 import { z } from "zod";
+
+const Avatar3D = lazy(() => import("@/components/Avatar3D").then((m) => ({ default: m.Avatar3D })));
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -119,13 +123,15 @@ function ExercisePage() {
 
           {/* 3D avatar stage */}
           <div className="mt-6 overflow-hidden rounded-3xl border hairline" style={{ aspectRatio: "4/5", background: "#F5F5F5" }}>
-            <SportAvatar
-              key={current.id}
-              movement={current.movement}
-              paused={avatarPaused}
-              size={9999}
-              className="block h-full w-full"
-            />
+            <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Avatar2D /></div>}>
+              <Avatar3D
+                key={current.id}
+                clipUrl={clipFor(current.movement)}
+                speed={speedFor(current.movement)}
+                paused={avatarPaused}
+                className="h-full w-full"
+              />
+            </Suspense>
           </div>
 
           {/* Timer + controls */}
