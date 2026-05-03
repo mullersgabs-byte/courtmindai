@@ -1,4 +1,8 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Avatar2D } from "./Avatar2D";
+import { clipFor, speedFor, type MovementKey } from "@/lib/avatarClips";
+
+const Avatar3D = lazy(() => import("./Avatar3D").then((m) => ({ default: m.Avatar3D })));
 
 export type SportKey =
   | "tennis"
@@ -21,64 +25,53 @@ export function normalizeSport(sport?: string): SportKey {
   return "generic";
 }
 
+function sportToMovement(key: SportKey): MovementKey {
+  switch (key) {
+    case "tennis": return "footwork";
+    case "gym": return "squat";
+    case "running": return "jogging";
+    case "football": return "footwork";
+    case "basketball": return "footwork";
+    case "yoga": return "yoga";
+    default: return "footwork";
+  }
+}
+
 type Props = {
   sport?: string;
+  movement?: MovementKey;
   size?: number | "sm" | "md" | "lg" | "xl";
-  showReference?: boolean;
+  paused?: boolean;
+  showReference?: boolean; // ignored — kept for back-compat
   className?: string;
 };
 
 const SIZE_MAP: Record<string, number> = { sm: 64, md: 120, lg: 180, xl: 240 };
 
-export function SportAvatar({ sport, size = 160, showReference = false, className }: Props) {
+export function SportAvatar({ sport, movement, size = 160, paused, className }: Props) {
   const px = typeof size === "number" ? size : (SIZE_MAP[size] ?? 160);
-  const key = useMemo(() => normalizeSport(sport), [sport]);
+  const sportKey = useMemo(() => normalizeSport(sport), [sport]);
+  const move = movement ?? sportToMovement(sportKey);
+  const url = clipFor(move);
+  const speed = speedFor(move);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
-    <div className={className} style={{ display: "inline-flex", gap: 8, alignItems: "flex-end" }}>
-      <svg
-        width={px}
-        height={px}
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label={`Avatar ${key}`}
-      >
-        {/* head */}
-        <circle cx="50" cy="22" r="8" stroke="currentColor" strokeWidth="2" />
-        {/* body */}
-        <line x1="50" y1="30" x2="50" y2="60" stroke="currentColor" strokeWidth="2" />
-        {/* arms */}
-        <g>
-          <line x1="50" y1="38" x2="35" y2="50" stroke="currentColor" strokeWidth="2">
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from="0 50 38"
-              to="20 50 38"
-              dur="1.6s"
-              repeatCount="indefinite"
-              values="0 50 38; 20 50 38; 0 50 38"
-            />
-          </line>
-          <line x1="50" y1="38" x2="65" y2="50" stroke="currentColor" strokeWidth="2">
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from="0 50 38"
-              to="-20 50 38"
-              dur="1.6s"
-              repeatCount="indefinite"
-              values="0 50 38; -20 50 38; 0 50 38"
-            />
-          </line>
-        </g>
-        {/* legs */}
-        <line x1="50" y1="60" x2="42" y2="80" stroke="currentColor" strokeWidth="2" />
-        <line x1="50" y1="60" x2="58" y2="80" stroke="currentColor" strokeWidth="2" />
-      </svg>
-      {showReference ? (
-        <SportAvatar sport={sport} size={Math.round(px * 0.5)} />
-      ) : null}
+    <div
+      className={className}
+      style={{ width: px, height: px, borderRadius: 16, overflow: "hidden", background: "#F5F5F5" }}
+    >
+      {mounted ? (
+        <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Avatar2D size={Math.min(px, 240)} /></div>}>
+          <Avatar3D clipUrl={url} paused={paused} speed={speed} />
+        </Suspense>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <Avatar2D size={Math.min(px, 240)} />
+        </div>
+      )}
     </div>
   );
 }
