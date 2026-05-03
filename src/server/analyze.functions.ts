@@ -416,7 +416,7 @@ Use the submit_video_analysis tool to return your answer. Do not write any other
 
 const FrameInputSchema = z.object({
   frames: z
-    .array(z.string().startsWith("data:image/"))
+    .array(z.string().startsWith("data:image/").max(2_000_000))
     .min(1)
     .max(8),
   durationSeconds: z.number().min(0).max(36_000).optional(),
