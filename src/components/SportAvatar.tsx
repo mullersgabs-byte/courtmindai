@@ -23,18 +23,21 @@ export function normalizeSport(sport?: string): SportKey {
 
 type Props = {
   sport?: string;
-  size?: number;
+  size?: number | "sm" | "md" | "lg" | "xl";
   showReference?: boolean;
   className?: string;
 };
 
+const SIZE_MAP: Record<string, number> = { sm: 64, md: 120, lg: 180, xl: 240 };
+
 export function SportAvatar({ sport, size = 160, showReference = false, className }: Props) {
+  const px = typeof size === "number" ? size : (SIZE_MAP[size] ?? 160);
   const key = useMemo(() => normalizeSport(sport), [sport]);
   return (
     <div className={className} style={{ display: "inline-flex", gap: 8, alignItems: "flex-end" }}>
       <svg
-        width={size}
-        height={size}
+        width={px}
+        height={px}
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +77,7 @@ export function SportAvatar({ sport, size = 160, showReference = false, classNam
         <line x1="50" y1="60" x2="58" y2="80" stroke="currentColor" strokeWidth="2" />
       </svg>
       {showReference ? (
-        <SportAvatar sport={sport} size={Math.round(size * 0.5)} />
+        <SportAvatar sport={sport} size={Math.round(px * 0.5)} />
       ) : null}
     </div>
   );
