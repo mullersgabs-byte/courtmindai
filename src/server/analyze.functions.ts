@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireAuthFn } from "./auth-fn-middleware";
 
 const InputSchema = z.object({
   mode: z.enum(["text", "image"]),
@@ -66,6 +67,7 @@ const TOOL = {
 };
 
 export const analyzePerformance = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((d: unknown) => InputSchema.parse(d))
   .handler(async ({ data }): Promise<{ ok: true; result: AnalysisResult } | { ok: false; error: string }> => {
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -198,6 +200,7 @@ const VIDEO_TOOL = {
 };
 
 export const analyzeVideo = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((d: unknown) => VideoInputSchema.parse(d))
   .handler(
     async ({ data }): Promise<VideoAnalysis> => {
@@ -519,6 +522,7 @@ function langInstruction(lang: string) {
 }
 
 export const analyzeFromFrames = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((d: unknown) => FrameInputSchema.parse(d))
   .handler(async ({ data }): Promise<FrameAnalysis> => {
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -749,6 +753,7 @@ const TEXT_TOOL = {
 };
 
 export const analyzeWorkoutText = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((d: unknown) => TextInputSchema.parse(d))
   .handler(async ({ data }): Promise<TextWorkoutAnalysis> => {
     const apiKey = process.env.LOVABLE_API_KEY;
