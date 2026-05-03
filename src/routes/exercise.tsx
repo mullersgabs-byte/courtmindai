@@ -1,26 +1,30 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SportAvatar } from "@/components/SportAvatar";
+import { EXERCISES, findExercise, type Exercise } from "@/lib/exerciseLibrary";
+import { z } from "zod";
+
+const searchSchema = z.object({ id: z.string().optional() });
 
 export const Route = createFileRoute("/exercise")({
+  validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
       { title: "Exercise — CourtMind Elite" },
-      { name: "description", content: "Run a focused training session with timed sets." },
+      { name: "description", content: "Premium training session with 3D avatar guidance." },
     ],
   }),
   component: ExercisePage,
 });
 
-/* ---------- Workout config ---------- */
-const TOTAL_SETS = 4;
-const WORK_SECONDS = 30;
-const REST_SECONDS = 15;
 const PREP_SECONDS = 5;
-
 type Phase = "idle" | "prep" | "work" | "rest" | "done";
 
 function ExercisePage() {
+  const { id } = useSearch({ from: "/exercise" });
+  const [current, setCurrent] = useState<Exercise>(() => findExercise(id));
+
+  // Timer state
   const [phase, setPhase] = useState<Phase>("idle");
   const [setIdx, setSetIdx] = useState(1);
   const [remaining, setRemaining] = useState(PREP_SECONDS);
@@ -31,25 +35,28 @@ function ExercisePage() {
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   useEffect(() => { setRef.current = setIdx; }, [setIdx]);
 
+  // Reset when exercise changes
+  useEffect(() => {
+    setRunning(false); setPhase("idle"); setSetIdx(1); setRemaining(PREP_SECONDS);
+  }, [current.id]);
+
   useEffect(() => {
     if (!running) return;
-    const id = window.setInterval(() => {
+    const t = window.setInterval(() => {
       setRemaining((r) => {
         if (r > 1) return r - 1;
         const p = phaseRef.current;
-        if (p === "prep") { setPhase("work"); return WORK_SECONDS; }
+        if (p === "prep") { setPhase("work"); return current.workSec; }
         if (p === "work") {
-          if (setRef.current >= TOTAL_SETS) {
-            setPhase("done"); setRunning(false); return 0;
-          }
-          setPhase("rest"); return REST_SECONDS;
+          if (setRef.current >= current.sets) { setPhase("done"); setRunning(false); return 0; }
+          setPhase("rest"); return current.restSec;
         }
-        if (p === "rest") { setSetIdx((s) => s + 1); setPhase("work"); return WORK_SECONDS; }
+        if (p === "rest") { setSetIdx((s) => s + 1); setPhase("work"); return current.workSec; }
         return 0;
       });
     }, 1000);
-    return () => window.clearInterval(id);
-  }, [running]);
+    return () => window.clearInterval(t);
+  }, [running, current.workSec, current.restSec, current.sets]);
 
   const start = () => {
     if (phase === "idle" || phase === "done") {
@@ -58,230 +65,159 @@ function ExercisePage() {
     setRunning(true);
   };
   const pause = () => setRunning(false);
-  const reset = () => {
-    setRunning(false); setPhase("idle"); setSetIdx(1); setRemaining(PREP_SECONDS);
-  };
+  const reset = () => { setRunning(false); setPhase("idle"); setSetIdx(1); setRemaining(PREP_SECONDS); };
   const skip = () => setRemaining(1);
 
-  const isActive = phase !== "idle" && phase !== "done";
   const totalForPhase =
     phase === "prep" ? PREP_SECONDS :
-    phase === "work" ? WORK_SECONDS :
-    phase === "rest" ? REST_SECONDS : PREP_SECONDS;
+    phase === "work" ? current.workSec :
+    phase === "rest" ? current.restSec : PREP_SECONDS;
+  const isActive = phase !== "idle" && phase !== "done";
   const progress = isActive ? 1 - remaining / totalForPhase : phase === "done" ? 1 : 0;
 
-  return (
-    <div className="relative min-h-screen bg-background text-foreground antialiased">
-      {/* top bar */}
-      <header className="relative z-20">
-        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-5 sm:px-8">
-          <Link
-            to="/home"
-            className="text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            ← Home
-          </Link>
-          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
-            Exercise · 03 of 12
-          </p>
-          <div className="w-16" />
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-[1100px] px-5 pb-24 pt-6 sm:px-8">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-          Footwork · Tennis
-        </p>
-        <h1 className="mt-5 text-balance text-[clamp(2.6rem,7vw,4.4rem)] font-medium leading-[0.95] tracking-[-0.04em]">
-          Lateral split-step.
-        </h1>
-        <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-          Quick lateral hops with a controlled landing. Keeps the body loaded
-          and ready for the next shot.
-        </p>
-
-        {/* Avatar demonstration — main movement + small reference */}
-        <section className="mt-10 overflow-hidden rounded-3xl border hairline bg-card bg-radial-court">
-          <div className="grid items-center gap-4 p-6 sm:grid-cols-[1fr_auto] sm:p-8">
-            <div className="flex justify-center">
-              <SportAvatar sport="tennis" size="xl" />
-            </div>
-            <div className="flex flex-col items-center gap-3 sm:items-end">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Reference</p>
-              <SportAvatar sport="tennis" size="md" />
-              <p className="max-w-[180px] text-center text-[11px] text-muted-foreground sm:text-right">
-                Mirror this rhythm — feet active, hips loaded.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* meta row */}
-        <ul className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10">
-          <Meta label="Duration" value={`${TOTAL_SETS} × ${WORK_SECONDS}s`} />
-          <Meta label="Intensity" value="High" />
-          <Meta label="Focus" value="Reaction" />
-        </ul>
-
-        {/* Execution mode — timer & controls */}
-        <TimerPanel
-          phase={phase}
-          setIdx={setIdx}
-          remaining={remaining}
-          progress={progress}
-          running={running}
-          onStart={start}
-          onPause={pause}
-          onReset={reset}
-          onSkip={skip}
-        />
-
-        {/* steps */}
-        <ol className="mt-12 divide-y hairline border-y hairline">
-          {[
-            { n: "I", t: "Stance", d: "Feet shoulder-width, knees soft." },
-            { n: "II", t: "Hop", d: "Light split-step, both feet leave the ground." },
-            { n: "III", t: "Land", d: "Quiet contact, weight on the balls of the feet." },
-            { n: "IV", t: "Reset", d: "Reload immediately — repeat for the full set." },
-          ].map((s) => (
-            <li key={s.n} className="grid grid-cols-12 items-center gap-4 py-4">
-              <span className="col-span-1 font-serif text-lg italic text-muted-foreground">{s.n}</span>
-              <p className="col-span-4 text-[14px] font-medium">{s.t}</p>
-              <p className="col-span-7 text-[13px] text-muted-foreground">{s.d}</p>
-            </li>
-          ))}
-        </ol>
-      </main>
-    </div>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <li className="bg-background p-5">
-      <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-[15px] font-medium tracking-tight">{value}</p>
-    </li>
-  );
-}
-
-/* ---------- Timer execution panel ---------- */
-function TimerPanel({
-  phase, setIdx, remaining, progress, running,
-  onStart, onPause, onReset, onSkip,
-}: {
-  phase: Phase; setIdx: number; remaining: number; progress: number; running: boolean;
-  onStart: () => void; onPause: () => void; onReset: () => void; onSkip: () => void;
-}) {
   const phaseLabel =
     phase === "idle" ? "Ready" :
     phase === "prep" ? "Get ready" :
     phase === "work" ? "Work" :
     phase === "rest" ? "Rest" : "Complete";
 
-  const size = 240;
+  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const ss = String(remaining % 60).padStart(2, "0");
+
+  // Ring math
+  const size = 220;
   const stroke = 4;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * (1 - progress);
 
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
-
-  const primaryLabel =
-    phase === "idle" ? "Start" :
-    phase === "done" ? "Restart" : "Resume";
+  const avatarPaused = !running || phase === "rest" || phase === "idle" || phase === "done";
 
   return (
-    <section className="mt-12 overflow-hidden rounded-3xl border hairline bg-card p-7 sm:p-9">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Execution</p>
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          Set {Math.min(setIdx, TOTAL_SETS)} / {TOTAL_SETS}
-        </p>
-      </div>
+    <div className="relative min-h-screen bg-background text-foreground antialiased">
+      <header className="relative z-20">
+        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-5 sm:px-8">
+          <Link to="/training" className="text-[13px] text-muted-foreground transition hover:text-foreground">
+            ← Back
+          </Link>
+          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
+            {current.sportTag} · {current.type}
+          </p>
+          <div className="w-16" />
+        </div>
+      </header>
 
-      <div className="mt-8 flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:gap-10">
-        {/* ring */}
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
-          <svg width={size} height={size} className="-rotate-90">
-            <circle
-              cx={size / 2} cy={size / 2} r={r}
-              fill="none" stroke="currentColor"
-              className="text-foreground/10" strokeWidth={stroke}
+      <main className="mx-auto grid max-w-[1100px] gap-8 px-5 pb-24 pt-2 sm:px-8 lg:grid-cols-[1.2fr_1fr]">
+        {/* LEFT: Avatar + Timer */}
+        <section>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
+            Now playing
+          </p>
+          <h1 className="mt-3 text-balance text-[clamp(2rem,5vw,3.2rem)] font-medium leading-[1] tracking-[-0.03em]">
+            {current.name}.
+          </h1>
+
+          {/* 3D avatar stage */}
+          <div className="mt-6 overflow-hidden rounded-3xl border hairline" style={{ aspectRatio: "4/5", background: "#F5F5F5" }}>
+            <SportAvatar
+              key={current.id}
+              movement={current.movement}
+              paused={avatarPaused}
+              size={9999}
+              className="block h-full w-full"
             />
-            <circle
-              cx={size / 2} cy={size / 2} r={r}
-              fill="none" stroke="currentColor"
-              className={
-                phase === "rest" ? "text-muted-foreground" : "text-foreground"
-              }
-              strokeWidth={stroke} strokeLinecap="round"
-              strokeDasharray={c} strokeDashoffset={dash}
-              style={{ transition: "stroke-dashoffset 1s linear" }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-              {phaseLabel}
-            </p>
-            <p className="mt-2 font-serif text-[clamp(2.8rem,5vw,3.6rem)] tabular-nums leading-none tracking-tight">
-              {phase === "done" ? "00:00" : `${mm}:${ss}`}
-            </p>
-            <p className="mt-3 text-[11px] text-muted-foreground">
-              {phase === "done" ? "Workout complete" : `${WORK_SECONDS}s work · ${REST_SECONDS}s rest`}
-            </p>
           </div>
-        </div>
 
-        {/* controls */}
-        <div className="flex w-full flex-1 flex-col gap-3 sm:max-w-[240px]">
-          {!running ? (
-            <button
-              onClick={onStart}
-              className="rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
-            >
-              {primaryLabel}
-            </button>
-          ) : (
-            <button
-              onClick={onPause}
-              className="rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90"
-            >
-              Pause
-            </button>
-          )}
-          <button
-            onClick={onSkip}
-            disabled={!running || phase === "done"}
-            className="rounded-full border hairline px-6 py-3 text-[13px] text-foreground/85 transition hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
-          >
-            Skip phase
-          </button>
-          <button
-            onClick={onReset}
-            className="rounded-full border hairline px-6 py-3 text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
+          {/* Timer + controls */}
+          <div className="mt-8 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-10">
+            <div className="relative shrink-0" style={{ width: size, height: size }}>
+              <svg width={size} height={size} className="-rotate-90">
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" className="text-foreground/10" strokeWidth={stroke} />
+                <circle
+                  cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor"
+                  className={phase === "rest" ? "text-muted-foreground" : "text-foreground"}
+                  strokeWidth={stroke} strokeLinecap="round"
+                  strokeDasharray={c} strokeDashoffset={dash}
+                  style={{ transition: "stroke-dashoffset 1s linear" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{phaseLabel}</p>
+                <p className="mt-2 font-serif text-[clamp(2.4rem,4.5vw,3.2rem)] tabular-nums leading-none tracking-tight">
+                  {phase === "done" ? "00:00" : `${mm}:${ss}`}
+                </p>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  Set {Math.min(setIdx, current.sets)} / {current.sets}
+                </p>
+              </div>
+            </div>
 
-      {/* set indicators */}
-      <div className="mt-8 flex items-center gap-1.5">
-        {Array.from({ length: TOTAL_SETS }).map((_, i) => {
-          const completed = i + 1 < setIdx || phase === "done";
-          const active = i + 1 === setIdx && phase !== "idle" && phase !== "done";
-          return (
-            <span
-              key={i}
-              className={`h-1 flex-1 rounded-full ${
-                completed ? "bg-foreground" : active ? "bg-foreground/60" : "bg-foreground/15"
-              }`}
-            />
-          );
-        })}
-      </div>
-    </section>
+            <div className="flex w-full flex-1 flex-col gap-3 sm:max-w-[240px]">
+              {!running ? (
+                <button onClick={start} className="rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90">
+                  {phase === "idle" ? "Start" : phase === "done" ? "Restart" : "Resume"}
+                </button>
+              ) : (
+                <button onClick={pause} className="rounded-full bg-foreground px-6 py-3.5 text-[14px] font-medium text-background transition hover:opacity-90">
+                  Pause
+                </button>
+              )}
+              <button
+                onClick={skip}
+                disabled={!running || phase === "done"}
+                className="rounded-full border hairline px-6 py-3 text-[13px] text-foreground/85 transition hover:border-foreground/40 hover:text-foreground disabled:opacity-40"
+              >
+                Skip phase
+              </button>
+              <button onClick={reset} className="rounded-full border hairline px-6 py-3 text-[13px] text-muted-foreground transition hover:text-foreground">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          {/* set indicators */}
+          <div className="mt-6 flex items-center gap-1.5">
+            {Array.from({ length: current.sets }).map((_, i) => {
+              const completed = i + 1 < setIdx || phase === "done";
+              const active = i + 1 === setIdx && phase !== "idle" && phase !== "done";
+              return (
+                <span key={i} className={`h-1 flex-1 rounded-full ${completed ? "bg-foreground" : active ? "bg-foreground/60" : "bg-foreground/15"}`} />
+              );
+            })}
+          </div>
+        </section>
+
+        {/* RIGHT: Exercise selector */}
+        <aside>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Exercises</p>
+          <ul className="mt-4 divide-y hairline border-y hairline">
+            {EXERCISES.map((ex) => {
+              const active = ex.id === current.id;
+              return (
+                <li key={ex.id}>
+                  <button
+                    onClick={() => setCurrent(ex)}
+                    className={`group grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 py-4 text-left transition ${
+                      active ? "opacity-100" : "opacity-80 hover:opacity-100"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-foreground" : "bg-foreground/25"}`} />
+                    <span>
+                      <span className="block text-[14px] font-medium tracking-tight">{ex.name}</span>
+                      <span className="mt-0.5 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                        {ex.type} · {ex.sportTag}
+                      </span>
+                    </span>
+                    <span className="text-[12px] tabular-nums text-muted-foreground">
+                      {ex.sets}×{ex.workSec}s
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
+      </main>
+    </div>
   );
 }
