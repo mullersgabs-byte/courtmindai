@@ -35,3 +35,34 @@ All `--gold` / `--gold-soft` tokens become `--platinum` / `--platinum-soft` (coo
 ## Result
 
 Pure monochrome elite aesthetic — black canvas, soft white type, cool platinum accents for buttons/rings/highlights. No warm gold anywhere. Existing layouts, typography (Instrument Serif + Inter), animations, and imagery remain intact.
+
+https://chatgpt.com/s/m_69f6b65ff27c819191004626a7e244fb
+export default function Logo() {
+  return (
+    <svg width="120" height="120" viewBox="0 0 200 200">
+      <style>{`
+        .bg { fill: white; }
+        .stroke { stroke: black; }
+        .dot { fill: black; }
+
+        @media (prefers-color-scheme: dark) {
+          .bg { fill: black; }
+          .stroke { stroke: white; }
+          .dot { fill: white; }
+        }
+      `}</style>
+
+      <rect width="200" height="200" className="bg" />
+
+      <path
+        d="M140 40 A60 60 0 1 0 140 160"
+        fill="none"
+        className="stroke"
+        strokeWidth="30"
+        strokeLinecap="round"
+      />
+
+      <circle cx="155" cy="100" r="10" className="dot" />
+    </svg>
+  );
+}
