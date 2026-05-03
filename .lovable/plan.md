@@ -1,68 +1,162 @@
-# Remove Gold Accent — Pure Black & White Elite Palette
+# Premium Training UI + Real 3D Avatar System
 
-The user wants the gold (#C6A962) accent removed. We'll pivot to a strictly monochrome luxury palette — black, soft white, and subtle platinum/silver hairlines. This keeps the "Apple-level" minimal premium feel without warm metallic tones.
+## Goals (in priority order)
 
-## New Palette
+1. Replace the current stick-figure SVG avatar everywhere with a **real 3D humanoid** rendered via React Three Fiber, using the provided FBX animations.
+2. Rebuild `/exercise` (and the entry from `/training`) into an **Apple-Fitness-style** training screen: prominent timer, large pause/continue, ring progress, and an exercise selector list.
+3. Strict fallback policy: if 3D fails to load, render a clean 2D silhouette card. **Never** render the stick figure again. Remove `SportAvatar` stick SVG entirely.
+4. Remove all emojis from UI strings across the app.
 
-- **Ink** `#0B0B0B` — primary background (unchanged)
-- **Bone** `#F5F5F5` — primary foreground (unchanged)
-- **Platinum** `#E8E8E8` — accent / highlights (replaces gold)
-- **Smoke** subtle white-on-black hairlines for borders & dividers
+## 1. 3D Avatar System
 
-All `--gold` / `--gold-soft` tokens become `--platinum` / `--platinum-soft` (cool neutral, no hue).
+### Dependencies (added via `bun add`)
 
-## Changes
+- `three`
+- `@react-three/fiber`
+- `@react-three/drei`
 
-### 1. `src/styles.css`
-- Remove `--gold` and `--gold-soft` variables; introduce `--platinum` (oklch ~0.92 0 0) and `--platinum-soft` (oklch ~0.82 0 0).
-- Update `--accent`, `--ring`, and `::selection` to use bone/platinum instead of gold.
-- Replace utility classes:
-  - `.text-gold` → `.text-platinum`
-  - `.bg-gold` → `.bg-platinum`
-  - `.border-gold` → `.border-platinum`
-  - `.gold-gradient` → `.platinum-gradient` (white→platinum→soft gray)
-  - `.text-gold-gradient` → `.text-platinum-gradient`
-  - `.glow-gold` → `.glow-soft` (neutral white glow)
-- Replace `@keyframes pulse-gold` and `.animate-shimmer` colors with neutral white/platinum tones (rename to `pulse-soft`).
+(FBX loading uses `three/examples/jsm/loaders/FBXLoader` — already shipped with `three`, no extra package.)
 
-### 2. `src/routes/__root.tsx`
-- Swap `text-gold-gradient` on the 404 page for `text-platinum-gradient` (or plain bone).
-- Update theme-color meta if it referenced gold.
+### Assets
 
-### 3. Hydration error fix (quiet)
-- Dashboard renders `new Date()` formatted in header → causes SSR/client mismatch. Wrap the date label in a `useEffect` + state (render empty on SSR) or use `suppressHydrationWarning`.
+Copy the uploaded FBX files into `public/avatars/` (served statically):
 
-## Result
+```
+public/avatars/
+  push-up.fbx          (Push_Up_To_Idle.fbx)
+  goalkeeper-side.fbx  (Goalkeeper_Sidestep_1_1.fbx)
+  cross-jumps.fbx      (Cross_Jumps.fbx)
+  baseball-strike.fbx  (Baseball_Strike_1.fbx)
+  jog-back.fbx         (Jog_Backward_Diagonal_1.fbx)
+```
 
-Pure monochrome elite aesthetic — black canvas, soft white type, cool platinum accents for buttons/rings/highlights. No warm gold anywhere. Existing layouts, typography (Instrument Serif + Inter), animations, and imagery remain intact.
+(Duplicates `_-_Copia` / `-2` are ignored — same files.)
 
+The FBX files include both mesh + rig + animation (Mixamo-style). We load the mesh from one canonical file and overlay other clips when the user switches movement.
 
-USE THE default function Logo() {
-  return (
-    <svg width="120" height="120" viewBox="0 0 200 200">
-      <style>{`
-        .bg { fill: white; }
-        .stroke { stroke: black; }
-        .dot { fill: black; }
+### New component: `src/components/Avatar3D.tsx`
 
-        @media (prefers-color-scheme: dark) {
-          .bg { fill: black; }
-          .stroke { stroke: white; }
-          .dot { fill: white; }
-        }
-      `}</style>
+- Wraps a `<Canvas>` (R3F) with:
+  - Soft three-point lighting (ambient + directional key + rim) — Apple Fitness vibe.
+  - Neutral light-grey ground plane with contact shadow (`<ContactShadows>` from drei).
+  - Camera: perspective, slight angle, auto-frames the model.
+  - `<OrbitControls enableZoom={false} enablePan={false} />` for subtle interaction (optional).
+- Loads an FBX via `useLoader(FBXLoader, url)`.
+- Recolors all mesh materials to a clean white (`#FFFFFF`), `roughness: 0.55`, `metalness: 0.05`, removes textures (premium clean look, no face detail).
+- Plays the embedded animation clip in a loop using `THREE.AnimationMixer`, advanced in `useFrame`.
+- Props: `clipUrl: string`, `paused?: boolean`, `className?: string`.
+- Suspense boundary + `<Loader2D />` fallback while the FBX downloads.
+- `ErrorBoundary` → falls back to `<Avatar2D />` (no stick figure).
 
-      <rect width="200" height="200" className="bg" />
+### New component: `src/components/Avatar2D.tsx`
 
-      <path
-        d="M140 40 A60 60 0 1 0 140 160"
-        fill="none"
-        className="stroke"
-        strokeWidth="30"
-        strokeLinecap="round"
-      />
+A clean, premium **3D silhouette** (single SVG path of a human silhouette, soft gradient fill, subtle drop shadow). Used only as fallback. No lines, no stick limbs.
 
-      <circle cx="155" cy="100" r="10" className="dot" />
-    </svg>
-  );
-}
+### Movement → clip mapping (`src/lib/avatarClips.ts`)
+
+```ts
+export const CLIPS = {
+  pushup:    "/avatars/push-up.fbx",
+  squat:     "/avatars/cross-jumps.fbx",   // closest available; biomechanical squat-jump
+  plank:     "/avatars/push-up.fbx",       // hold pose / static (paused mixer)
+  jogging:   "/avatars/jog-back.fbx",
+  sprint:    "/avatars/jog-back.fbx",      // played at higher mixer.timeScale
+  jab:       "/avatars/baseball-strike.fbx",
+  jab_cross: "/avatars/baseball-strike.fbx",
+  footwork:  "/avatars/goalkeeper-side.fbx",
+  yoga:      "/avatars/push-up.fbx",       // static pose, paused
+};
+```
+
+Each exercise in the app declares a `movement` key. Unknown sport → `footwork` default. Avatar component accepts `speed` to scale animation.
+
+### Removal
+
+- Delete the SVG body in `src/components/SportAvatar.tsx`. Replace its export with a thin wrapper that renders `<Avatar3D clipUrl={…}/>` so existing imports keep working.
+- Remove the small "reference" mini-avatar grid (currently shows another stick figure).
+
+## 2. Training Screen Rebuild
+
+Rewrite `src/routes/exercise.tsx` (kept route, new layout). Add a small landing strip on `/training` that links into it with a chosen exercise.
+
+### Layout (mobile-first, viewport 390px)
+
+```text
+┌──────────────────────────────┐
+│  ← Back        Tennis · 03/12│
+├──────────────────────────────┤
+│                              │
+│        [ 3D AVATAR ]         │
+│      (full-bleed canvas)     │
+│                              │
+├──────────────────────────────┤
+│       Lateral split-step     │
+│                              │
+│        ╭──────────╮          │
+│        │  02:14    │ ring     │
+│        ╰──────────╯          │
+│                              │
+│   [   Pause   ]  [ Skip ]    │
+│                              │
+├──────────────────────────────┤
+│  EXERCISES                   │
+│  ▸ Warm-up         · 5 min   │
+│  ● Lateral split   · 4×30s   │
+│  ▸ Push-ups        · 3×12    │
+│  ▸ Sprint          · 6×20s   │
+│  ▸ Cooldown        · 5 min   │
+└──────────────────────────────┘
+```
+
+### Components / behavior
+
+- **Timer**: keep existing `phase / setIdx / remaining` state. Big SF-mono digits; circular SVG progress ring; phase label (Get ready / Work / Rest / Complete).
+- **Controls**: large pill buttons — primary `Pause` (toggles to `Resume`), secondary `Skip phase`, tertiary `Reset`.
+- **Exercise selector**: vertical list of cards with name, type tag, duration. Click → loads that exercise's clip into the avatar and resets the timer to its config. Active row highlighted with a subtle hairline.
+- **3D Canvas**: top section, ~45% viewport height on mobile, `aspect-[4/5]` on desktop. Pauses the animation mixer when `running === false`.
+
+### Data
+
+A small static array of exercises lives in `src/lib/exerciseLibrary.ts`:
+
+```ts
+{ id, name, type, sets, workSec, restSec, movement, sportTag }
+```
+
+`/training` "Start session" CTA navigates to `/exercise?id=...`.
+
+## 3. App-wide Cleanup
+
+- Remove emoji characters from any user-facing strings (scan `src/routes/*.tsx`, `src/components/*.tsx`, `src/lib/i18n.tsx`).
+- Keep the existing pure black/white token system. Add a `--surface-soft` (very light grey) only for the 3D ground plane and exercise card hover.
+- Confirm `home.tsx` "Today's session" card uses `<Avatar3D>` thumbnail (or omits avatar) — never the stick figure.
+
+## Technical Notes
+
+- **Bundle size**: three + drei ≈ 600KB gzipped. Acceptable for a fitness app whose hero is the 3D avatar. Lazy-load the `Avatar3D` component with `React.lazy` so the marketing/landing pages stay light.
+- **SSR**: R3F is client-only. Wrap `<Avatar3D>` in a `typeof window !== 'undefined'` guard + `lazy` import to avoid SSR crashes in TanStack Start.
+- **FBX served from `/public**`: works in TanStack Start dev + Cloudflare Worker prod (static assets). No special config.
+- **No stick figure** ever rendered: `SportAvatar` becomes pure proxy → `Avatar3D` → on error → `Avatar2D` silhouette → on fatal error → `null`.
+
+## Files
+
+Created
+
+- `src/components/Avatar3D.tsx`
+- `src/components/Avatar2D.tsx`
+- `src/lib/avatarClips.ts`
+- `src/lib/exerciseLibrary.ts`
+- `public/avatars/*.fbx` (5 files)
+
+Edited
+
+- `src/components/SportAvatar.tsx` (becomes thin wrapper, no SVG)
+- `src/routes/exercise.tsx` (new layout: 3D + timer + selector)
+- `src/routes/training.tsx` (link cards pass `?id=` to exercise)
+- `src/routes/home.tsx` (replace any avatar usage; remove emojis)
+- `package.json` (three, @react-three/fiber, @react-three/drei)
+
+## Out of scope
+
+- Custom Mixamo-quality animations for sports without source FBX (we map to the closest provided clip and label honestly — no fake/incorrect movements).
+- Auth/security changes.
