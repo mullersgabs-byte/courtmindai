@@ -189,6 +189,14 @@ function TrainingPage() {
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
               Seven sessions composed for this week. Check in every day to keep momentum honest.
             </p>
+            <div className="mt-6">
+              <Link
+                to="/exercise"
+                className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[13px] font-medium text-background transition hover:opacity-90"
+              >
+                Start workout
+              </Link>
+            </div>
           </div>
 
           {/* Daily check-in */}

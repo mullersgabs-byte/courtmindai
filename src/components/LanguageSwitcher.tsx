@@ -31,8 +31,7 @@ export function LanguageSwitcher({ tone = "dark" }: { tone?: "dark" | "light" })
         aria-label={t("common.language")}
         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition ${triggerClass}`}
       >
-        <span aria-hidden>🌐</span>
-        <span>{current.flag}</span>
+        <span className="font-medium">{current.code.toUpperCase()}</span>
       </button>
 
       {open && (
