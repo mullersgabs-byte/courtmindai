@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireAuthFn } from "./auth-fn-middleware";
 
 const InputSchema = z.object({
   sport: z.string().min(1).max(60),
@@ -96,6 +97,7 @@ const planTool = {
 };
 
 export const generatePlan = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }): Promise<{ plan: WeeklyPlan | null; error: string | null }> => {
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -206,6 +208,7 @@ const InsightsInputSchema = z.object({
 });
 
 export const generatePlanFromInsights = createServerFn({ method: "POST" })
+  .middleware([requireAuthFn])
   .inputValidator((data: unknown) => InsightsInputSchema.parse(data))
   .handler(async ({ data }): Promise<{ plan: WeeklyPlan | null; error: string | null }> => {
     const apiKey = process.env.LOVABLE_API_KEY;
