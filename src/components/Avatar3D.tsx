@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState, Component, type ReactNode } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { ContactShadows, Environment } from "@react-three/drei";
+import { ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { Avatar2D } from "./Avatar2D";
@@ -108,7 +108,6 @@ export function Avatar3D({ clipUrl, paused, speed, className }: Props) {
           />
           <directionalLight position={[-4, 3, -2]} intensity={0.35} color="#ffffff" />
           <Suspense fallback={null}>
-            <Environment preset="studio" />
             <Model url={clipUrl} paused={paused} speed={speed} />
             <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={6} blur={2.4} far={3} />
           </Suspense>
