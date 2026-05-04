@@ -89,7 +89,7 @@ function TrainingPage() {
           language: lang,
         },
       } as any);
-      if (res.status !== "ok") throw new Error(res.error || "Analysis failed.");
+      if (res.status !== "done") throw new Error(res.error || "Analysis failed.");
       // Save workout entry
       try {
         const list = JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]");
