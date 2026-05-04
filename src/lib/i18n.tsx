@@ -24,8 +24,6 @@ const dictionaries: Record<Lang, Dict> = {
     "landing.cta.start": "Start training", "landing.cta.preview": "See your home",
     "landing.closing.title.a": "Less noise.", "landing.closing.title.b": "More precision.",
     "landing.closing.note": "Free to start. No card required.",
-    "notfound.title": "We could not find that page.",
-    "notfound.cta": "Back home",
     "common.close": "Close", "common.signout": "Sign out", "common.guest": "Guest",
     "common.signedin": "Signed in", "common.language": "Language", "common.continue": "Continue",
     "common.done": "Done", "common.edit": "Edit", "common.delete": "Delete",
