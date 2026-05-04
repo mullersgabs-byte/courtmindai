@@ -120,8 +120,8 @@
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
   .font-serif { font-family: var(--font-serif); }
-  .hairline { border-color: oklch(1 0 0 / 0.08); }
-  .hairline-strong { border-color: oklch(1 0 0 / 0.18); }
+  .hairline { border-color: var(--border); }
+  .hairline-strong { border-color: var(--input); }
   .text-platinum { color: var(--platinum); }
   .bg-platinum { background-color: var(--platinum); }
   .border-platinum { border-color: var(--platinum); }
