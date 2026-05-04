@@ -1,773 +1,265 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-
-import {
-  addSessionLog,
-  getWeekCheckIns,
-  saveDailyCheckIn,
-  isoDate,
-  weekStart,
-  type SessionLog,
-} from "@/lib/sessionStore";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
+import { getProfile } from "@/lib/profile";
+import { TabBar } from "@/components/TabBar";
+import { analyzeFromFrames } from "@/server/analyze.functions";
 
 export const Route = createFileRoute("/training")({
-  head: () => ({
-    meta: [
-      { title: "Training — CourtMind Elite" },
-      { name: "description", content: "Sessions, daily check-in and progress charts." },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Training — CourtMind" }] }),
   component: TrainingPage,
 });
 
-/* ---------- types ---------- */
-type Session = {
-  id: string;
-  title: string;
-  sport: string;
-  duration: string;
-  durationMinutes: number;
-  intensity: "Low" | "Medium" | "High";
-  status: "done" | "today" | "upcoming";
-  day: string;
+type Phase = "idle" | "recording" | "analyzing" | "result" | "error";
+type Result = {
+  overallScore: number;
+  verdict: string;
+  positives: string[];
+  mistakes: string[];
+  improvements: string[];
+  steps: string[];
 };
 
-const initialSessions: Session[] = [
-  { id: "s1", title: "Crosscourt rally", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "done", day: "Mon" },
-  { id: "s2", title: "Athletic power", sport: "Strength", duration: "55 min", durationMinutes: 55, intensity: "High", status: "done", day: "Tue" },
-  { id: "s3", title: "Recovery flow", sport: "Mobility", duration: "30 min", durationMinutes: 30, intensity: "Low", status: "done", day: "Wed" },
-  { id: "s4", title: "Baseline rhythm & footwork", sport: "Tennis", duration: "1h 10m", durationMinutes: 70, intensity: "Medium", status: "today", day: "Thu" },
-  { id: "s5", title: "Sprint intervals", sport: "Running", duration: "40 min", durationMinutes: 40, intensity: "High", status: "upcoming", day: "Fri" },
-  { id: "s6", title: "Long run · easy pace", sport: "Running", duration: "1h 20m", durationMinutes: 80, intensity: "Low", status: "upcoming", day: "Sat" },
-  { id: "s7", title: "Match simulation", sport: "Football", duration: "1h 30m", durationMinutes: 90, intensity: "High", status: "upcoming", day: "Sun" },
-];
+const WORKOUTS = ["Push-ups", "Squats", "Lunges", "Plank", "Burpees", "Jumping jacks"];
 
-const STATUS_KEY = "courtmind.training.status.v1";
-const HISTORY_KEY = "courtmind.history.v1";
-
-type StoredStatus = Record<string, { status: Session["status"]; completedAt?: string; logId?: string }>;
-type WorkoutEntry = {
-  id: string; date: string; title: string; sport?: string;
-  durationMinutes?: number; intensity?: "Low" | "Medium" | "High";
-  note?: string;
-};
-
-function readStatus(): StoredStatus {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem(STATUS_KEY) || "{}"); } catch { return {}; }
-}
-function writeStatus(s: StoredStatus) {
-  try { localStorage.setItem(STATUS_KEY, JSON.stringify(s)); } catch {}
-}
-function readHistory(): WorkoutEntry[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
-}
-function writeHistory(h: WorkoutEntry[]) {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
-    // notify same-tab listeners (storage event only fires across tabs)
-    window.dispatchEvent(new CustomEvent("courtmind:history-updated"));
-  } catch {}
-}
-
-/* ---------- page ---------- */
 function TrainingPage() {
-  const [tab, setTab] = useState<"all" | "done" | "today" | "upcoming">("all");
-  const [sessions, setSessions] = useState<Session[]>(initialSessions);
-  const [logTarget, setLogTarget] = useState<Session | null>(null);
+  const { t, lang } = useT();
+  const [workout, setWorkout] = useState<string>(WORKOUTS[0]);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string>("");
+  const [result, setResult] = useState<Result | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  // Hydrate persisted status on mount.
-  useEffect(() => {
-    const stored = readStatus();
-    setSessions((prev) =>
-      prev.map((s) => (stored[s.id] ? { ...s, status: stored[s.id].status } : s))
-    );
-  }, []);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
 
-  const completeSession = (id: string) => {
-    const target = sessions.find((s) => s.id === id);
-    if (!target || target.status === "done") return;
-    // Open the session log modal — actual completion happens after RPE/notes.
-    setLogTarget(target);
-  };
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
-  const finalizeSession = (
-    target: Session,
-    payload: { actualMinutes: number; rpe: number; notes: string },
-  ) => {
-    const logId = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    // 1. update session list
-    setSessions((prev) => prev.map((s) => (s.id === target.id ? { ...s, status: "done" } : s)));
-
-    // 2. persist status
-    const stored = readStatus();
-    stored[target.id] = { status: "done", completedAt: now, logId };
-    writeStatus(stored);
-
-    // 3. add to shared workout history (drives /profile + /history charts)
-    const history = readHistory();
-    history.unshift({
-      id: logId,
-      date: now,
-      title: target.title,
-      sport: target.sport,
-      durationMinutes: payload.actualMinutes,
-      intensity: target.intensity,
-      note: payload.notes || undefined,
-    });
-    writeHistory(history);
-
-    // 4. add a structured session log used by /plan to generate better plans
-    const log: SessionLog = {
-      id: logId,
-      date: now,
-      title: target.title,
-      sport: target.sport,
-      plannedMinutes: target.durationMinutes,
-      actualMinutes: payload.actualMinutes,
-      rpe: payload.rpe,
-      notes: payload.notes || undefined,
-    };
-    addSessionLog(log);
-    setLogTarget(null);
-  };
-
-  const undoSession = (id: string) => {
-    const stored = readStatus();
-    const entry = stored[id];
-    setSessions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: s.id === "s4" ? "today" : "upcoming" } : s))
-    );
-    // Remove the auto-logged history entry if we created it.
-    if (entry?.logId) {
-      const history = readHistory().filter((h) => h.id !== entry.logId);
-      writeHistory(history);
+  const startRecording = async () => {
+    setError(""); setResult(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      chunksRef.current = [];
+      const rec = new MediaRecorder(stream, { mimeType: "video/webm" });
+      rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        if (videoRef.current) videoRef.current.srcObject = null;
+        await analyze(url);
+      };
+      recRef.current = rec;
+      rec.start();
+      setPhase("recording");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Camera unavailable.");
+      setPhase("error");
     }
-    delete stored[id];
-    writeStatus(stored);
   };
 
-  const filtered = useMemo(
-    () => (tab === "all" ? sessions : sessions.filter((s) => s.status === tab)),
-    [tab, sessions]
-  );
+  const stopRecording = () => {
+    if (recRef.current && recRef.current.state !== "inactive") {
+      setPhase("analyzing");
+      recRef.current.stop();
+    }
+  };
 
-  // Derive live stats from sessions for the trio.
-  const doneCount = sessions.filter((s) => s.status === "done").length;
-  const totalCount = sessions.length;
-  const minutesDone = sessions
-    .filter((s) => s.status === "done")
-    .reduce((sum, s) => sum + s.durationMinutes, 0);
-  const volumeLabel = minutesDone >= 60
-    ? `${Math.floor(minutesDone / 60)}h ${minutesDone % 60}m`
-    : `${minutesDone} min`;
+  const analyze = async (url: string) => {
+    try {
+      setProgress(0);
+      const { frames, durationSeconds } = await extractFrames(url, 6, setProgress);
+      const profile = getProfile();
+      const res = await analyzeFromFrames({
+        data: {
+          frames, durationSeconds,
+          sport: profile.sport || workout, level: profile.level || "intermediate",
+          language: lang,
+        },
+      } as any);
+      if (res.status !== "done") throw new Error(res.error || "Analysis failed.");
+      // Save workout entry
+      try {
+        const list = JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]");
+        list.unshift({ id: crypto.randomUUID(), date: new Date().toISOString(), title: workout, durationMinutes: Math.max(1, Math.round(durationSeconds / 60)) });
+        localStorage.setItem("courtmind.history.v1", JSON.stringify(list));
+      } catch {}
+      setResult({
+        overallScore: res.overallScore,
+        verdict: res.verdict,
+        positives: res.positives,
+        mistakes: res.mistakes,
+        improvements: res.improvements,
+        steps: res.steps,
+      });
+      setPhase("result");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not analyze.");
+      setPhase("error");
+    }
+  };
+
+  const reset = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(""); setResult(null); setError(""); setPhase("idle");
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 glass border-b hairline">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-             Home
-          </Link>
-          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Training</p>
-          <div className="w-16" />
-        </div>
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      <header className="px-5 pt-12 pb-4">
+        <h1 className="text-[28px] font-semibold tracking-[-0.02em]">{t("training.title")}</h1>
+        <p className="mt-1 text-[14px] text-muted-foreground">{t("training.subtitle")}</p>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
-        {/* Hero */}
-        <section className="grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-end">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Week 06 · Block II</p>
-            <h1 className="mt-5 text-balance text-[clamp(2.2rem,6vw,4.4rem)] font-medium leading-[0.96] tracking-[-0.04em]">
-              Train with <span className="font-serif italic font-normal text-court-gradient">composure.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-              Seven sessions composed for this week. Check in every day to keep momentum honest.
-            </p>
-            <div className="mt-6">
-              <Link
-                to="/exercise"
-                className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[13px] font-medium text-background transition hover:opacity-90"
-              >
-                Start workout
-              </Link>
+      <main className="mx-auto max-w-[480px] px-5 space-y-6">
+        {phase === "idle" && (
+          <>
+            <section>
+              <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.pick")}</p>
+              <div className="overflow-hidden rounded-2xl border bg-card divide-y">
+                {WORKOUTS.map((w) => (
+                  <button key={w} onClick={() => setWorkout(w)}
+                    className={`flex w-full items-center justify-between px-4 py-3 text-left text-[15px] transition hover:bg-foreground/5 ${
+                      workout === w ? "font-medium" : "text-muted-foreground"
+                    }`}>
+                    {w}
+                    {workout === w && <span className="text-[12px] uppercase tracking-wider">·</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <p className="text-center text-[13px] text-muted-foreground">{t("training.tip")}</p>
+
+            <button onClick={startRecording}
+              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              {t("training.record")}
+            </button>
+          </>
+        )}
+
+        {(phase === "recording") && (
+          <>
+            <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
+              <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
+            </div>
+            <div className="flex items-center justify-center gap-2 text-[13px] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              {t("training.recording")}
+            </div>
+            <button onClick={stopRecording}
+              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              {t("training.stop")}
+            </button>
+          </>
+        )}
+
+        {phase === "analyzing" && (
+          <div className="rounded-3xl border bg-card p-8 text-center">
+            <p className="text-[13px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.analyzing")}</p>
+            <div className="mx-auto mt-6 h-1 w-full max-w-[240px] overflow-hidden rounded-full bg-foreground/10">
+              <div className="h-full bg-foreground transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>
           </div>
+        )}
 
-          {/* Daily check-in */}
-          <DailyCheckIn />
-        </section>
-
-        {/* Stats trio */}
-        <section className="mt-14 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
-          <StatTile label="This week" value={`${doneCount}`} unit={`/ ${totalCount} sessions`} delta={doneCount === totalCount ? "Week complete" : "On track"} />
-          <StatTile label="Volume" value={volumeLabel} unit="trained" delta={`${doneCount} session${doneCount === 1 ? "" : "s"} logged`} />
-          <StatTile label="Streak" value="14" unit="days" delta="Personal best" />
-        </section>
-
-        {/* Charts */}
-        <section className="mt-14 grid gap-6 lg:grid-cols-3">
-          <ChartCard
-            title="Performance"
-            sub="Last 9 sessions"
-            metric="82"
-            unit="/ 100"
-            chart={<LineChart values={[40, 48, 44, 52, 60, 58, 70, 74, 82]} />}
-          />
-          <ChartCard
-            title="Volume by week"
-            sub="Minutes trained"
-            metric="5h 25m"
-            unit="this week"
-            chart={<BarsChart values={[140, 195, 168, 240, 210, 285, 325]} labels={["W1","W2","W3","W4","W5","W6","W7"]} />}
-          />
-          <ChartCard
-            title="Consistency"
-            sub="Last 14 days"
-            metric="94%"
-            unit="check-ins"
-            chart={<DotsChart count={14} active={12} />}
-          />
-        </section>
-
-        {/* Sessions list */}
-        <section className="mt-14">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">Sessions</p>
-              <h2 className="mt-2 text-3xl font-medium tracking-tight">
-                Your week, <span className="font-serif italic">composed.</span>
-              </h2>
-            </div>
-            <Tabs tab={tab} setTab={setTab} />
-          </div>
-
-          <ul className="mt-6 space-y-3">
-            {filtered.map((s) => (
-              <SessionRow
-                key={s.id}
-                session={s}
-                onComplete={() => completeSession(s.id)}
-                onUndo={() => undoSession(s.id)}
-              />
-            ))}
-            {filtered.length === 0 && (
-              <li className="rounded-2xl border hairline bg-card p-10 text-center text-[14px] text-muted-foreground">
-                Nothing here yet.
-              </li>
+        {phase === "result" && result && (
+          <>
+            {previewUrl && (
+              <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
+                <video src={previewUrl} controls playsInline className="h-full w-full object-cover" />
+              </div>
             )}
-          </ul>
-        </section>
+            <section className="rounded-3xl border bg-card p-6 text-center">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.score")}</p>
+              <p className="mt-2 text-[56px] font-semibold leading-none tracking-[-0.03em]">{Math.round(result.overallScore)}</p>
+              <p className="mt-3 text-[14px] text-muted-foreground">{result.verdict}</p>
+            </section>
+            {result.positives.length > 0 && <FeedbackList title={t("training.feedback.positives")} items={result.positives} />}
+            {result.mistakes.length > 0 && <FeedbackList title={t("training.feedback.fix")} items={result.mistakes} />}
+            {result.steps.length > 0 && <FeedbackList title={t("training.feedback.steps")} items={result.steps} />}
+            <button onClick={reset}
+              className="inline-flex w-full items-center justify-center rounded-full border bg-card px-6 py-3.5 text-[15px] font-medium hover:bg-foreground/5">
+              {t("training.try_again")}
+            </button>
+          </>
+        )}
 
-        {/* AI weekly note */}
-        <section className="mt-14 overflow-hidden rounded-2xl border hairline bg-card p-7">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-court/15 text-court glow-court-soft">
-              
-            </span>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-court">Coach note</p>
-          </div>
-          <p className="mt-5 max-w-3xl text-balance text-[clamp(1.2rem,2vw,1.6rem)] leading-snug font-light">
-            You've held a clean rhythm across the last two blocks. <span className="font-serif italic">Don't add load yet</span> — let consistency compound through the weekend.
-          </p>
-        </section>
+        {phase === "error" && (
+          <>
+            <div className="rounded-3xl border border-destructive/40 bg-destructive/10 p-6 text-[14px] text-destructive">{error}</div>
+            <button onClick={reset}
+              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              {t("common.reset")}
+            </button>
+          </>
+        )}
       </main>
 
-      {logTarget && (
-        <SessionLogModal
-          session={logTarget}
-          onClose={() => setLogTarget(null)}
-          onSave={(payload) => finalizeSession(logTarget, payload)}
-        />
-      )}
+      <TabBar />
     </div>
   );
 }
 
-/* ---------- Daily check-in ---------- */
-function DailyCheckIn() {
-  const labels = ["M", "T", "W", "T", "F", "S", "S"];
-  const [today, setToday] = useState(0);
-  const [energy, setEnergy] = useState(3);
-  const [soreness, setSoreness] = useState(1);
-  const [days, setDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
-  const [todayDate, setTodayDate] = useState<string>(isoDate());
+function FeedbackList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section>
+      <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
+        {items.map((it, i) => <li key={i} className="px-4 py-3 text-[14px]">{it}</li>)}
+      </ul>
+    </section>
+  );
+}
 
-  // Hydrate the whole week from localStorage so check-ins persist across sessions.
-  useEffect(() => {
-    const now = new Date();
-    const dayIdx = (now.getDay() + 6) % 7; // 0=Mon
-    setToday(dayIdx);
-    setTodayDate(isoDate(now));
-
-    const week = getWeekCheckIns(now);
-    const start = weekStart(now);
-    const next = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return Boolean(week.days[isoDate(d)]);
+/* ---------- frame extraction ---------- */
+async function extractFrames(src: string, count: number, onProgress: (p: number) => void): Promise<{ frames: string[]; durationSeconds: number }> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.src = src; video.muted = true; video.playsInline = true; video.preload = "auto";
+    video.addEventListener("error", () => reject(new Error("Could not read video.")));
+    video.addEventListener("loadedmetadata", async () => {
+      const duration = isFinite(video.duration) ? video.duration : 0;
+      if (!duration || duration < 0.2) return reject(new Error("Video too short."));
+      const w = video.videoWidth || 640, h = video.videoHeight || 360;
+      const scale = Math.min(1, 720 / w);
+      const cw = Math.round(w * scale), ch = Math.round(h * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas unavailable."));
+      const frames: string[] = [];
+      const targets: number[] = [];
+      for (let i = 0; i < count; i++) {
+        const pct = 0.05 + (i / Math.max(1, count - 1)) * 0.9;
+        targets.push(Math.min(duration - 0.05, pct * duration));
+      }
+      const seekTo = (time: number) => new Promise<void>((res) => {
+        const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
+        video.addEventListener("seeked", onSeeked);
+        video.currentTime = time;
+      });
+      try {
+        for (let i = 0; i < targets.length; i++) {
+          await seekTo(targets[i]);
+          ctx.drawImage(video, 0, 0, cw, ch);
+          frames.push(canvas.toDataURL("image/jpeg", 0.78));
+          onProgress((i + 1) / targets.length);
+        }
+        resolve({ frames, durationSeconds: duration });
+      } catch (err) { reject(err); }
     });
-    setDays(next);
-
-    const todayEntry = week.days[isoDate(now)];
-    if (todayEntry) {
-      setEnergy(todayEntry.energy);
-      if (typeof todayEntry.soreness === "number") setSoreness(todayEntry.soreness);
-    }
-  }, []);
-
-  // Auto-save the daily check-in whenever the athlete moves the energy or
-  // soreness sliders. The whole week is persisted client-side.
-  useEffect(() => {
-    if (!todayDate) return;
-    saveDailyCheckIn({ date: todayDate, energy, soreness });
-    setDays((prev) => prev.map((v, i) => (i === today ? true : v)));
-  }, [energy, soreness, todayDate, today]);
-
-  const checkedToday = days[today];
-
-  return (
-    <div className="rounded-3xl border hairline glass p-6 sm:p-7">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Daily check-in</p>
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Streak · 14d</p>
-      </div>
-
-      {/* week dots */}
-      <div className="mt-5 grid grid-cols-7 gap-2">
-        {days.map((done, i) => {
-          const isToday = i === today;
-          return (
-            <div key={i} className="flex flex-col items-center gap-2">
-              <span
-                className={[
-                  "grid h-9 w-9 place-items-center rounded-full text-[12px] font-medium transition",
-                  done
-                    ? "bg-court text-ink glow-court-soft"
-                    : isToday
-                      ? "border border-court/60 text-court animate-pulse-court"
-                      : "border hairline text-muted-foreground",
-                ].join(" ")}
-              >
-                {done ? "✓" : labels[i]}
-              </span>
-              <span className={`text-[10px] uppercase tracking-[0.2em] ${isToday ? "text-court" : "text-muted-foreground"}`}>
-                {isToday ? "today" : labels[i]}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* energy slider */}
-      <div className="mt-7">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Energy today</p>
-          <p className="text-[12px] text-foreground">{["Very low","Low","Steady","Good","Peak"][energy]}</p>
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          {[0,1,2,3,4].map((i) => (
-            <button
-              key={i}
-              onClick={() => setEnergy(i)}
-              className={[
-                "h-1.5 flex-1 rounded-full transition",
-                i <= energy ? "bg-court glow-court-soft" : "bg-foreground/10 hover:bg-foreground/20",
-              ].join(" ")}
-              aria-label={`Energy ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <button
-        onClick={() => saveDailyCheckIn({ date: todayDate, energy, soreness })}
-        disabled={checkedToday}
-        className={[
-          "mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-[14px] font-medium transition",
-          checkedToday
-            ? "border hairline text-muted-foreground"
-            : "bg-court text-ink hover:opacity-90 glow-court",
-        ].join(" ")}
-      >
-        {checkedToday ? <>Saved · auto-synced</> : <>Save check-in</>}
-      </button>
-
-      {/* Soreness slider */}
-      <div className="mt-5">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Soreness</p>
-          <p className="text-[12px] text-foreground">{["None","Mild","Moderate","High","Extreme"][soreness]}</p>
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          {[0,1,2,3,4].map((i) => (
-            <button
-              key={i}
-              onClick={() => setSoreness(i)}
-              className={[
-                "h-1.5 flex-1 rounded-full transition",
-                i <= soreness ? "bg-warn" : "bg-foreground/10 hover:bg-foreground/20",
-              ].join(" ")}
-              aria-label={`Soreness ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Stat tile ---------- */
-function StatTile({ label, value, unit, delta }: { label: string; value: string; unit: string; delta: string }) {
-  return (
-    <div className="bg-background p-7">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-        
-      </div>
-      <p className="mt-8 flex items-baseline gap-2">
-        <span className="text-5xl font-medium tracking-[-0.03em] leading-none">{value}</span>
-        <span className="text-[13px] text-muted-foreground">{unit}</span>
-      </p>
-      <p className="mt-3 text-[12px] text-court">{delta}</p>
-    </div>
-  );
-}
-
-/* ---------- Tabs ---------- */
-function Tabs({
-  tab, setTab,
-}: { tab: string; setTab: (t: "all"|"done"|"today"|"upcoming") => void }) {
-  const items: { id: "all"|"done"|"today"|"upcoming"; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "today", label: "Today" },
-    { id: "upcoming", label: "Upcoming" },
-    { id: "done", label: "Completed" },
-  ];
-  return (
-    <div className="inline-flex rounded-full border hairline bg-card p-1">
-      {items.map((it) => (
-        <button
-          key={it.id}
-          onClick={() => setTab(it.id)}
-          className={[
-            "rounded-full px-4 py-1.5 text-[12px] font-medium transition",
-            tab === it.id
-              ? "bg-court text-ink"
-              : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-        >
-          {it.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ---------- Session row ---------- */
-function SessionRow({
-  session,
-  onComplete,
-  onUndo,
-}: {
-  session: Session;
-  onComplete: () => void;
-  onUndo: () => void;
-}) {
-  const intensityColor =
-    session.intensity === "High" ? "text-danger" :
-    session.intensity === "Medium" ? "text-warn" : "text-success";
-
-  return (
-    <li
-      className={[
-        "group relative grid grid-cols-12 items-center gap-4 overflow-hidden rounded-2xl border hairline bg-card p-3 sm:p-4 transition",
-        session.status === "today" ? "ring-1 ring-court/40 glow-court-soft" : "hover:border-court/30",
-      ].join(" ")}
-    >
-      {/* thumbnail */}
-      <div className="col-span-3 sm:col-span-2 relative aspect-[4/3] overflow-hidden rounded-xl bg-radial-court">
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
-        </div>
-        <span className="absolute left-2 top-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em]">
-          {session.day}
-        </span>
-      </div>
-
-      {/* main */}
-      <div className="col-span-9 sm:col-span-5">
-        <div className="flex items-center gap-2">
-          <p className="text-[12px] uppercase tracking-[0.2em] text-muted-foreground">{session.sport}</p>
-          {session.status === "today" && (
-            <span className="rounded-full bg-court/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-court">Today</span>
-          )}
-          {session.status === "done" && (
-            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-success">Done</span>
-          )}
-        </div>
-        <p className="mt-1 text-[15px] font-medium tracking-tight">{session.title}</p>
-      </div>
-
-      {/* meta */}
-      <div className="col-span-12 sm:col-span-4 flex flex-wrap items-center gap-x-6 gap-y-1 sm:justify-end">
-        <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-           {session.duration}
-        </span>
-        <span className={`inline-flex items-center gap-1.5 text-[12px] ${intensityColor}`}>
-           {session.intensity}
-        </span>
-      </div>
-
-      {/* action */}
-      <div className="col-span-12 sm:col-span-1 flex justify-end">
-        {session.status === "done" ? (
-          <button
-            type="button"
-            onClick={onUndo}
-            aria-label="Mark as not done"
-            title="Undo completion"
-            className="grid h-10 w-10 place-items-center rounded-full bg-success/15 text-[11px] font-medium uppercase tracking-[0.18em] text-success transition hover:bg-foreground/10 hover:text-foreground"
-          >
-            ✓
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onComplete}
-            aria-label="Mark session as done"
-            title="Mark as done"
-            className={[
-              "grid h-10 w-10 place-items-center rounded-full text-[11px] font-medium uppercase tracking-[0.18em] transition",
-              session.status === "today"
-                ? "bg-court text-ink glow-court animate-pulse-court"
-                : "border hairline text-foreground hover:bg-foreground hover:text-background hover:border-foreground",
-            ].join(" ")}
-          >
-            Go
-          </button>
-        )}
-      </div>
-    </li>
-  );
-}
-
-/* ---------- Chart card ---------- */
-function ChartCard({
-  title, sub, metric, unit, chart,
-}: { title: string; sub: string; metric: string; unit: string; chart: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border hairline bg-card p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{title}</p>
-          <p className="mt-1 text-[12px] text-muted-foreground/70">{sub}</p>
-        </div>
-        
-      </div>
-      <p className="mt-6 flex items-baseline gap-2">
-        <span className="text-4xl font-medium tracking-[-0.03em] leading-none">{metric}</span>
-        <span className="text-[12px] text-muted-foreground">{unit}</span>
-      </p>
-      <div className="mt-6 h-24">{chart}</div>
-    </div>
-  );
-}
-
-/* ---------- charts ---------- */
-function LineChart({ values }: { values: number[] }) {
-  const w = 280, h = 90;
-  const max = Math.max(...values), min = Math.min(...values);
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * w;
-    const y = h - ((v - min) / (max - min || 1)) * (h - 6) - 3;
-    return [x, y] as const;
   });
-  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0]},${p[1]}`).join(" ");
-  const area = `${path} L ${w},${h} L 0,${h} Z`;
-  const last = pts[pts.length - 1];
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full">
-      <defs>
-        <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--court)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--court)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill="url(#lineFill)" />
-      <path
-        d={path} fill="none" stroke="var(--court)" strokeWidth="1.5"
-        strokeLinecap="round" strokeLinejoin="round"
-        style={{ filter: "drop-shadow(0 0 6px var(--court))" }}
-      />
-      <circle cx={last[0]} cy={last[1]} r="3.5" fill="var(--court)" />
-      <circle cx={last[0]} cy={last[1]} r="6" fill="var(--court)" opacity="0.25" />
-    </svg>
-  );
-}
-
-function BarsChart({ values, labels }: { values: number[]; labels: string[] }) {
-  const max = Math.max(...values);
-  return (
-    <div className="flex h-full items-end gap-2">
-      {values.map((v, i) => {
-        const isLast = i === values.length - 1;
-        return (
-          <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-            <div
-              className={[
-                "w-full rounded-sm transition",
-                isLast ? "bg-court glow-court-soft" : "bg-foreground/15 group-hover:bg-foreground/25",
-              ].join(" ")}
-              style={{ height: `${(v / max) * 100}%` }}
-            />
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/70">{labels[i]}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function DotsChart({ count, active }: { count: number; active: number }) {
-  return (
-    <div className="grid h-full grid-cols-7 place-items-center gap-2">
-      {Array.from({ length: count }).map((_, i) => (
-        <span
-          key={i}
-          className={[
-            "h-3 w-3 rounded-full",
-            i < active ? "bg-court glow-court-soft" : "bg-foreground/15",
-          ].join(" ")}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ---------- Session log modal (RPE · real duration · notes) ---------- */
-function SessionLogModal({
-  session,
-  onClose,
-  onSave,
-}: {
-  session: Session;
-  onClose: () => void;
-  onSave: (payload: { actualMinutes: number; rpe: number; notes: string }) => void;
-}) {
-  const [rpe, setRpe] = useState(7);
-  const [actual, setActual] = useState(session.durationMinutes);
-  const [notes, setNotes] = useState("");
-
-  const rpeLabel =
-    rpe <= 3 ? "Very easy" :
-    rpe <= 5 ? "Easy" :
-    rpe <= 7 ? "Moderate" :
-    rpe <= 9 ? "Hard" : "Maximal";
-  const rpeTone =
-    rpe <= 5 ? "text-success" : rpe <= 7 ? "text-warn" : "text-danger";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/70 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md rounded-3xl border hairline bg-card p-6 shadow-2xl animate-float-up sm:p-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-court">Log this session</p>
-            <h3 className="mt-2 text-[18px] font-medium tracking-tight">{session.title}</h3>
-            <p className="text-[12px] text-muted-foreground">{session.sport} · planned {session.durationMinutes} min</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-full border hairline px-3 py-1 text-[12px] text-muted-foreground transition hover:text-foreground"
-          >
-            Close
-          </button>
-        </div>
-
-        {/* Actual duration */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Real duration</p>
-            <p className="text-[13px] text-foreground">{actual} min</p>
-          </div>
-          <input
-            type="range" min={5} max={180} step={5} value={actual}
-            onChange={(e) => setActual(Number(e.target.value))}
-            className="mt-3 w-full accent-[var(--court)]"
-            style={{ colorScheme: "dark" }}
-          />
-        </div>
-
-        {/* RPE */}
-        <div className="mt-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">RPE · perceived effort</p>
-            <p className={`text-[13px] ${rpeTone}`}>{rpe}/10 · {rpeLabel}</p>
-          </div>
-          <div className="mt-3 grid grid-cols-10 gap-1.5">
-            {Array.from({ length: 10 }).map((_, i) => {
-              const n = i + 1;
-              const active = n <= rpe;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setRpe(n)}
-                  className={[
-                    "h-8 rounded-md text-[11px] font-medium transition",
-                    active
-                      ? n <= 5
-                        ? "bg-success/80 text-ink"
-                        : n <= 7
-                          ? "bg-warn/80 text-ink"
-                          : "bg-danger/80 text-ink"
-                      : "border hairline text-muted-foreground hover:border-court/30",
-                  ].join(" ")}
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div className="mt-5">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Notes</p>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
-            placeholder="How did it feel? Any pain, breakthrough, technical cue?"
-            rows={3}
-            className="mt-2 w-full resize-none rounded-xl border hairline bg-background px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:border-court/50 focus:outline-none focus:ring-1 focus:ring-court/40"
-          />
-          <p className="mt-1 text-right text-[10px] text-muted-foreground">{notes.length}/500</p>
-        </div>
-
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-full px-4 py-2.5 text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave({ actualMinutes: actual, rpe, notes: notes.trim() })}
-            className="rounded-full bg-court px-5 py-2.5 text-[13px] font-medium text-ink transition hover:opacity-90 glow-court-soft"
-          >
-            Save & complete
-          </button>
-        </div>
-
-        <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Logs feed your weekly plan — better data, better plans.
-        </p>
-      </div>
-    </div>
-  );
 }

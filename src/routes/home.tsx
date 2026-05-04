@@ -1,366 +1,114 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useT } from "@/lib/i18n";
+import { getProfile, type Profile } from "@/lib/profile";
+import { TabBar } from "@/components/TabBar";
 
 export const Route = createFileRoute("/home")({
-  head: () => ({
-    meta: [
-      { title: "Home — CourtMind Elite" },
-      { name: "description", content: "Your personal training home. Today's session, programs and progress." },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Home — CourtMind" }] }),
   component: HomePage,
 });
 
+type WorkoutEntry = { id: string; date: string; title: string; durationMinutes?: number };
+
 function HomePage() {
-  const [greeting, setGreeting] = useState("Good evening");
+  const { t } = useT();
+  const [profile, setProfile] = useState<Profile>({});
+  const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
+
   useEffect(() => {
-    const h = new Date().getHours();
-    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    setProfile(getProfile());
+    try { setWorkouts(JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]")); } catch {}
   }, []);
 
+  const greetingKey = useMemo(() => {
+    const h = new Date().getHours();
+    return h < 12 ? "home.greeting.morning" : h < 18 ? "home.greeting.afternoon" : "home.greeting.evening";
+  }, []);
+
+  const stats = useMemo(() => {
+    const now = Date.now();
+    const weekAgo = now - 7 * 86400_000;
+    const week = workouts.filter((w) => +new Date(w.date) >= weekAgo);
+    const minutes = week.reduce((s, w) => s + (w.durationMinutes || 0), 0);
+    const days = new Set(workouts.map((w) => new Date(w.date).toISOString().slice(0, 10)));
+    let streak = 0; const d = new Date();
+    for (;;) {
+      const k = d.toISOString().slice(0, 10);
+      if (days.has(k)) { streak++; d.setDate(d.getDate() - 1); } else break;
+    }
+    return { sessions: week.length, minutes, streak };
+  }, [workouts]);
+
+  const initial = (profile.name || "?").charAt(0).toUpperCase();
+
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 glass border-b hairline">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <Link to="/" className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
-            <span className="block h-2 w-2 rounded-full bg-court animate-pulse-court" />
-            CourtMind
-          </Link>
-          <nav className="hidden items-center gap-10 text-[13px] text-muted-foreground md:flex">
-            <Link to="/home" className="text-foreground">Home</Link>
-            <Link to="/training" className="transition hover:text-foreground">Training</Link>
-            <Link to="/analyze" className="transition hover:text-foreground">Analyze</Link>
-            <Link to="/plan" className="transition hover:text-foreground">Plan</Link>
-            <Link to="/history" className="transition hover:text-foreground">Archive</Link>
-            <Link to="/profile" className="transition hover:text-foreground">Profile</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <Avatar />
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      <header className="px-5 pt-12 pb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] text-muted-foreground">{t(greetingKey)}</p>
+            <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.02em]">{profile.name || "—"}</h1>
           </div>
+          <Link to="/profile" className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-[14px] font-medium text-background overflow-hidden">
+            {profile.photoDataUrl ? <img src={profile.photoDataUrl} alt="" className="h-full w-full object-cover" /> : initial}
+          </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-5 pb-32 sm:px-8">
-        {/* Greeting + user header */}
-        <section className="pt-10 pb-12 sm:pt-16">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <span className="absolute -inset-0.5 rounded-full court-gradient opacity-60 blur-md" aria-hidden />
-              <span className="relative grid h-12 w-12 place-items-center rounded-full bg-foreground text-[14px] font-medium text-background ring-1 ring-court/40">
-                S
-              </span>
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                {greeting}
-              </p>
-              <p className="text-[15px] text-foreground">Sofia Martins</p>
-            </div>
-          </div>
-
-          <h1 className="mt-10 text-balance text-[clamp(2.2rem,6vw,4.2rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-            Today is for <span className="font-serif italic font-normal text-court-gradient">precision.</span>
-          </h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-            A focused tennis session is queued. Your last analysis showed cleaner footwork — let's keep that line.
-          </p>
+      <main className="mx-auto max-w-[480px] px-5 space-y-6">
+        {/* Today */}
+        <section className="rounded-3xl border bg-card p-6">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.title")}</p>
+          <p className="mt-3 text-[22px] font-medium tracking-tight">{profile.sport || t("home.subtitle")}</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">{profile.goal || t("home.subtitle")}</p>
+          <Link to="/training"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background transition hover:opacity-90">
+            {t("home.cta.start")}
+          </Link>
         </section>
 
-        {/* Today's training — hero card */}
-        <section className="pb-16">
-          <SectionLabel>Today's training</SectionLabel>
-          <div className="group relative mt-5 overflow-hidden rounded-3xl border hairline bg-card transition hover:glow-court">
-            <div className="grid lg:grid-cols-[1.2fr_1fr]">
-              <div className="relative aspect-[4/3] lg:aspect-auto bg-radial-court">
-                <div className="absolute inset-0 grid place-items-center">
-                  <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-                <div className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full bg-court animate-pulse-court" /> Live plan
-                </div>
-                <div className="absolute bottom-6 left-6 flex items-center gap-3">
-                  <button className="grid h-14 w-14 place-items-center rounded-full bg-court text-ink shadow-lg glow-court transition hover:scale-105">
-                    
-                  </button>
+        {/* This week */}
+        <section>
+          <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.section.this_week")}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label={t("home.stat.sessions")} value={String(stats.sessions)} />
+            <Stat label={t("home.stat.minutes")} value={String(stats.minutes)} />
+            <Stat label={t("home.stat.streak")} value={String(stats.streak)} />
+          </div>
+        </section>
+
+        {/* Activity */}
+        <section>
+          <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.section.activity")}</p>
+          {workouts.length === 0 ? (
+            <div className="rounded-2xl border bg-card p-5 text-[14px] text-muted-foreground">—</div>
+          ) : (
+            <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
+              {workouts.slice(0, 5).map((w) => (
+                <li key={w.id} className="flex items-center justify-between px-4 py-3">
                   <div>
-                    <p className="text-[12px] uppercase tracking-[0.2em] text-foreground/70">Tennis · 1h 10m</p>
-                    <p className="mt-0.5 text-[18px] font-medium tracking-tight">Baseline rhythm & footwork</p>
+                    <p className="text-[14px] font-medium">{w.title}</p>
+                    <p className="text-[12px] text-muted-foreground">{new Date(w.date).toLocaleDateString()}</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between p-7 sm:p-9">
-                <div>
-                  <ul className="divide-y hairline">
-                    {[
-                      { t: "Warm-up", d: "Mobility · 10 min" },
-                      { t: "Footwork ladder", d: "Lateral · 15 min" },
-                      { t: "Crosscourt rally", d: "20-ball sets · 30 min" },
-                      { t: "Serve placement", d: "Wide / T / body · 15 min" },
-                    ].map((b) => (
-                      <li key={b.t} className="flex items-center gap-4 py-3.5">
-                        <span className="grid h-9 w-9 place-items-center rounded-full border hairline text-[11px] font-medium uppercase tracking-[0.18em] text-court">
-                          ·
-                        </span>
-                        <div className="flex-1">
-                          <p className="text-[14px] font-medium">{b.t}</p>
-                          <p className="text-[12px] text-muted-foreground">{b.d}</p>
-                        </div>
-                        
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-7">
-                  <ProgressLine value={42} label="Plan completion" />
-                  <Link
-                    to="/analyze"
-                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-court px-5 py-3.5 text-[14px] font-medium text-ink transition hover:opacity-90 glow-court-soft"
-                  >
-                     Start training
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Continue where you left off */}
-        <section className="pb-16">
-          <div className="flex items-end justify-between">
-            <SectionLabel>Continue where you left off</SectionLabel>
-            <Link to="/training" className="text-[12px] text-muted-foreground transition hover:text-foreground">View all →</Link>
-          </div>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { sport: "tennis", t: "Crosscourt depth", d: "Tennis · 12 min left", p: 64 },
-              { sport: "yoga", t: "Hip mobility flow", d: "Recovery · 6 min left", p: 80 },
-              { sport: "running", t: "Sprint intervals", d: "Running · 18 min left", p: 32 },
-            ].map((c) => (
-              <ContinueCard key={c.t} {...c} />
-            ))}
-          </div>
-        </section>
-
-        {/* Recommended programs */}
-        <section className="pb-16">
-          <div className="flex items-end justify-between">
-            <SectionLabel>Recommended programs</SectionLabel>
-            <Link to="/plan" className="text-[12px] text-muted-foreground transition hover:text-foreground">Explore →</Link>
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <ProgramCard sport="tennis" tag="Tennis" t="Elite Baseline" w="6 weeks" />
-            <ProgramCard sport="gym" tag="Strength" t="Athletic Power" w="8 weeks" />
-            <ProgramCard sport="running" tag="Running" t="VO2 Foundation" w="4 weeks" />
-            <ProgramCard sport="football" tag="Football" t="Explosive Agility" w="5 weeks" />
-          </div>
-        </section>
-
-        {/* Inspiration / aesthetic grid */}
-        <section className="pb-20">
-          <SectionLabel>From the journal</SectionLabel>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <AestheticCard sport="gym" title="The art of the warm-up" meta="Read · 4 min" />
-            <AestheticCard sport="yoga" title="Recovery, redefined" meta="Read · 6 min" />
-            <AestheticCard sport="running" title="Why slow runs win" meta="Read · 5 min" />
-          </div>
-        </section>
-
-        {/* CTA to analyze */}
-        <section className="pb-10">
-          <div className="overflow-hidden rounded-3xl border hairline glass p-8 sm:p-12">
-            <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">AI Analysis</p>
-                <h3 className="mt-3 text-balance text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-tight">
-                  Send a video. Receive <span className="font-serif italic text-court-gradient">precision.</span>
-                </h3>
-              </div>
-              <Link
-                to="/analyze"
-                className="inline-flex items-center gap-2 rounded-full bg-court px-6 py-3.5 text-[14px] font-medium text-ink transition hover:opacity-90 glow-court"
-              >
-                 Send training
-              </Link>
-            </div>
-          </div>
+                  <p className="text-[13px] text-muted-foreground">{w.durationMinutes ?? "—"} min</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </main>
+
+      <TabBar />
     </div>
   );
 }
 
-/* ---------- pieces ---------- */
-function Avatar() {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  const initial = (email?.[0] || "S").toUpperCase();
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
-
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Account"
-        className="relative block"
-      >
-        <span className="absolute -inset-0.5 rounded-full platinum-gradient opacity-30 blur-sm" aria-hidden />
-        <span className="relative grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-medium text-background">
-          {initial}
-        </span>
-      </button>
-      {open && (
-        <div className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border hairline bg-popover shadow-xl">
-          <div className="border-b hairline px-4 py-3">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Signed in</p>
-            <p className="mt-1 truncate text-[13px] text-foreground">{email || "Guest"}</p>
-          </div>
-          <Link
-            to="/profile"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
-          >
-             Profile
-          </Link>
-          {email ? (
-            <button
-              onClick={signOut}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] text-foreground hover:bg-foreground/5"
-            >
-               Sign out
-            </button>
-          ) : (
-            <Link
-              to="/auth"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 text-[13px] text-foreground hover:bg-foreground/5"
-            >
-               Sign in
-            </Link>
-          )}
-        </div>
-      )}
+    <div className="rounded-2xl border bg-card p-4 text-center">
+      <p className="text-2xl font-medium tracking-tight">{value}</p>
+      <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
     </div>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-      {children}
-    </p>
-  );
-}
-
-function ProgressLine({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
-        <p className="text-[12px] text-foreground">{value}%</p>
-      </div>
-      <div className="mt-2 h-px w-full bg-foreground/10">
-        <div
-          className="h-px bg-court glow-court-soft"
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function ContinueCard({ sport, t, d, p }: { sport: string; t: string; d: string; p: number }) {
-  return (
-    <Link
-      to="/training"
-      className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court"
-    >
-      <div className="relative aspect-[4/5] overflow-hidden bg-radial-court">
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-        <button className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full glass text-foreground transition group-hover:bg-court group-hover:text-ink">
-          
-        </button>
-        <div className="absolute bottom-4 left-4 right-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-foreground/70">{d}</p>
-          <p className="mt-1 text-[16px] font-medium tracking-tight">{t}</p>
-          <div className="mt-3 h-px w-full bg-foreground/15">
-            <div className="h-px bg-court glow-court-soft" style={{ width: `${p}%` }} />
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function ProgramCard({ sport, tag, t, w }: { sport: string; tag: string; t: string; w: string }) {
-  return (
-    <Link
-      to="/plan"
-      className="group relative block overflow-hidden rounded-2xl border hairline bg-card transition hover:-translate-y-0.5 hover:glow-court"
-    >
-      <div className="relative aspect-[3/4] overflow-hidden bg-radial-court">
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
-        <span className="absolute left-3 top-3 rounded-full glass px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-foreground">
-          {tag}
-        </span>
-        <div className="absolute bottom-3 left-3 right-3">
-          <p className="text-[15px] font-medium tracking-tight">{t}</p>
-          <p className="mt-0.5 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{w}</p>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function AestheticCard({ sport, title, meta }: { sport: string; title: string; meta: string }) {
-  return (
-    <Link to="/history" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
-      <div className="relative aspect-[5/4] overflow-hidden bg-radial-court">
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
-        </div>
-      </div>
-      <div className="p-5">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{meta}</p>
-        <p className="mt-2 text-[16px] font-medium tracking-tight">{title}</p>
-      </div>
-    </Link>
   );
 }
