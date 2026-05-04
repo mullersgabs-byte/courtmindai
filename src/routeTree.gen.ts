@@ -16,7 +16,6 @@ import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as ExerciseRouteImport } from './routes/exercise'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyzeRouteImport } from './routes/analyze'
@@ -57,11 +56,6 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ExerciseRoute = ExerciseRouteImport.update({
-  id: '/exercise',
-  path: '/exercise',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -88,7 +82,6 @@ export interface FileRoutesByFullPath {
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
-  '/exercise': typeof ExerciseRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -102,7 +95,6 @@ export interface FileRoutesByTo {
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
-  '/exercise': typeof ExerciseRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -117,7 +109,6 @@ export interface FileRoutesById {
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
-  '/exercise': typeof ExerciseRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -133,7 +124,6 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/auth'
     | '/dashboard'
-    | '/exercise'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -147,7 +137,6 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/auth'
     | '/dashboard'
-    | '/exercise'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -161,7 +150,6 @@ export interface FileRouteTypes {
     | '/analyze'
     | '/auth'
     | '/dashboard'
-    | '/exercise'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -176,7 +164,6 @@ export interface RootRouteChildren {
   AnalyzeRoute: typeof AnalyzeRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
-  ExerciseRoute: typeof ExerciseRoute
   HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -237,13 +224,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/exercise': {
-      id: '/exercise'
-      path: '/exercise'
-      fullPath: '/exercise'
-      preLoaderRoute: typeof ExerciseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -280,7 +260,6 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyzeRoute: AnalyzeRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
-  ExerciseRoute: ExerciseRoute,
   HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
