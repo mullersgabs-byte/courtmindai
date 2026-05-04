@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { SportAvatar } from "@/components/SportAvatar";
+
 import {
   generatePlan,
   generatePlanFromInsights,
@@ -437,7 +437,7 @@ function PlanHeader({ plan }: { plan: WeeklyPlan }) {
           <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">{plan.overview}</p>
         </div>
         <div className="hidden sm:block">
-          <SportAvatar sport={plan.sport} size="lg" />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
       </div>
 
@@ -632,7 +632,7 @@ function NextUpAndProgress({
           </span>
         </div>
         <div className="mt-4 flex justify-center">
-          <SportAvatar sport={sport} size="md" showReference />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
 
         <h2 className="mt-4 text-balance text-[clamp(1.6rem,3vw,2.2rem)] font-medium leading-tight tracking-tight">

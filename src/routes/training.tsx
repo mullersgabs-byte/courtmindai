@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { SportAvatar } from "@/components/SportAvatar";
+
 import {
   addSessionLog,
   getWeekCheckIns,
@@ -493,7 +493,7 @@ function SessionRow({
       {/* thumbnail */}
       <div className="col-span-3 sm:col-span-2 relative aspect-[4/3] overflow-hidden rounded-xl bg-radial-court">
         <div className="absolute inset-0 grid place-items-center">
-          <SportAvatar sport={session.sport} size="sm" />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
         <span className="absolute left-2 top-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em]">
           {session.day}
