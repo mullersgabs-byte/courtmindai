@@ -1,6 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { I18nProvider, useT } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
+import { LanguageGate } from "@/components/LanguageGate";
 
 function NotFoundComponent() {
   const { t } = useT();
@@ -35,9 +37,13 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootShell,
   component: () => (
-    <I18nProvider>
-      <Outlet />
-    </I18nProvider>
+    <ThemeProvider>
+      <I18nProvider>
+        <LanguageGate>
+          <Outlet />
+        </LanguageGate>
+      </I18nProvider>
+    </ThemeProvider>
   ),
   notFoundComponent: NotFoundComponent,
 });
