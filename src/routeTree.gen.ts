@@ -9,23 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TrainingRouteImport } from './routes/training'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PlanRouteImport } from './routes/plan'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as HomeRouteImport } from './routes/home'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyzeRouteImport } from './routes/analyze'
 import { Route as IndexRouteImport } from './routes/index'
 
-const TrainingRoute = TrainingRouteImport.update({
-  id: '/training',
-  path: '/training',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -39,16 +31,6 @@ const ProfileRoute = ProfileRouteImport.update({
 const PlanRoute = PlanRouteImport.update({
   id: '/plan',
   path: '/plan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -83,12 +65,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/home': typeof HomeRoute
-  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/training': typeof TrainingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -96,12 +75,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/home': typeof HomeRoute
-  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/training': typeof TrainingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -110,12 +86,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
-  '/home': typeof HomeRoute
-  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/training': typeof TrainingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,12 +98,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
-    | '/home'
-    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
-    | '/training'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -138,12 +108,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
-    | '/home'
-    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
-    | '/training'
   id:
     | '__root__'
     | '/'
@@ -151,12 +118,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
-    | '/home'
-    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
-    | '/training'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,23 +129,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
-  HomeRoute: typeof HomeRoute
-  OnboardingRoute: typeof OnboardingRoute
   PlanRoute: typeof PlanRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  TrainingRoute: typeof TrainingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/training': {
-      id: '/training'
-      path: '/training'
-      fullPath: '/training'
-      preLoaderRoute: typeof TrainingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -201,20 +155,6 @@ declare module '@tanstack/react-router' {
       path: '/plan'
       fullPath: '/plan'
       preLoaderRoute: typeof PlanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -261,13 +201,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
-  HomeRoute: HomeRoute,
-  OnboardingRoute: OnboardingRoute,
   PlanRoute: PlanRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  TrainingRoute: TrainingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
