@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { SportAvatar } from "@/components/SportAvatar";
+
 
 export const Route = createFileRoute("/home")({
   head: () => ({
@@ -78,7 +78,7 @@ function HomePage() {
             <div className="grid lg:grid-cols-[1.2fr_1fr]">
               <div className="relative aspect-[4/3] lg:aspect-auto bg-radial-court">
                 <div className="absolute inset-0 grid place-items-center">
-                  <SportAvatar sport="tennis" size="xl" showReference />
+                  <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-foreground">
@@ -308,7 +308,7 @@ function ContinueCard({ sport, t, d, p }: { sport: string; t: string; d: string;
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-radial-court">
         <div className="absolute inset-0 grid place-items-center">
-          <SportAvatar sport={sport} size="lg" />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <button className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full glass text-foreground transition group-hover:bg-court group-hover:text-ink">
@@ -334,7 +334,7 @@ function ProgramCard({ sport, tag, t, w }: { sport: string; tag: string; t: stri
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-radial-court">
         <div className="absolute inset-0 grid place-items-center">
-          <SportAvatar sport={sport} size="lg" />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
         <span className="absolute left-3 top-3 rounded-full glass px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-foreground">
@@ -354,7 +354,7 @@ function AestheticCard({ sport, title, meta }: { sport: string; title: string; m
     <Link to="/history" className="group block overflow-hidden rounded-2xl border hairline bg-card transition hover:glow-court">
       <div className="relative aspect-[5/4] overflow-hidden bg-radial-court">
         <div className="absolute inset-0 grid place-items-center">
-          <SportAvatar sport={sport} size="lg" />
+          <div className="h-16 w-16 rounded-full bg-foreground/10" aria-hidden />
         </div>
       </div>
       <div className="p-5">
