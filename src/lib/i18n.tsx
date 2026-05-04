@@ -15,6 +15,17 @@ type Dict = Record<string, string>;
 const dictionaries: Record<Lang, Dict> = {
   en: {
     "common.back": "Back", "common.save": "Save", "common.cancel": "Cancel",
+    "nav.method": "Method", "nav.capabilities": "Capabilities", "nav.disciplines": "Disciplines",
+    "nav.signin": "Sign in", "nav.begin": "Begin",
+    "landing.edition": "Performance edition",
+    "landing.hero.line1a": "Train with", "landing.hero.line1b": "clarity.",
+    "landing.hero.line2a": "Perform with", "landing.hero.line2b": "intent.",
+    "landing.hero.copy": "An intelligent training system for athletes who take performance seriously. Quiet design, sharp insight.",
+    "landing.cta.start": "Start training", "landing.cta.preview": "See your home",
+    "landing.closing.title.a": "Less noise.", "landing.closing.title.b": "More precision.",
+    "landing.closing.note": "Free to start. No card required.",
+    "notfound.title": "We could not find that page.",
+    "notfound.cta": "Back home",
     "common.close": "Close", "common.signout": "Sign out", "common.guest": "Guest",
     "common.signedin": "Signed in", "common.language": "Language", "common.continue": "Continue",
     "common.done": "Done", "common.edit": "Edit", "common.delete": "Delete",
