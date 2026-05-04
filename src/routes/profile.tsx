@@ -1,364 +1,232 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar,
-} from "recharts";
-import { listAnalyses, type AnalysisRow } from "@/server/history.functions";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getProfile, saveProfile, type Profile } from "@/lib/profile";
+import { useTheme } from "@/lib/theme";
+import { useT, LANGUAGES, type Lang } from "@/lib/i18n";
+import { notifPermission, requestNotifPermission, startDailyReminder, notifSupported } from "@/lib/notifications";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({
-    meta: [
-      { title: "Profile — CourtMind Elite" },
-      { name: "description", content: "Your performance evolution, history and milestones." },
-    ],
-  }),
-  loader: () => listAnalyses(),
-  errorComponent: ({ error }) => (
-    <div className="min-h-screen grid place-items-center p-8 text-center">
-      <div>
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Error</p>
-        <h1 className="mt-3 text-2xl font-medium">Could not load profile</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <Link to="/home" className="mt-6 inline-block text-sm underline">Back home</Link>
-      </div>
-    </div>
-  ),
-  notFoundComponent: () => (
-    <div className="min-h-screen grid place-items-center"><Link to="/home">Home</Link></div>
-  ),
+  head: () => ({ meta: [{ title: "Profile — CourtMind" }] }),
   component: ProfilePage,
 });
 
-type Profile = { name?: string; sport?: string; level?: string; goal?: string };
-type WorkoutEntry = { id: string; date: string; title: string; sport?: string; durationMinutes?: number; intensity?: string };
+type WorkoutEntry = { id: string; date: string; title: string; sport?: string; durationMinutes?: number };
 
-function readProfile(): Profile {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem("courtmind.profile") || "{}"); } catch { return {}; }
-}
 function readWorkouts(): WorkoutEntry[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]"); } catch { return []; }
 }
 
 function ProfilePage() {
-  const router = useRouter();
-  const { analyses } = Route.useLoaderData() as { analyses: AnalysisRow[]; error: string | null };
-
-  const [profile, setProfile] = useState<Profile>({});
+  const navigate = useNavigate();
+  const { t, lang, setLang } = useT();
+  const { mode, setMode } = useTheme();
+  const [profile, setProfileState] = useState<Profile>({});
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
-  useEffect(() => { setProfile(readProfile()); setWorkouts(readWorkouts()); }, []);
+  const [email, setEmail] = useState<string>("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const scored = useMemo(
-    () => analyses
-      .filter(a => typeof a.overall_score === "number")
-      .slice()
-      .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)),
-    [analyses]
-  );
+  useEffect(() => {
+    setProfileState(getProfile());
+    setWorkouts(readWorkouts());
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
 
-  // Evolution data — chronological scores
-  const evolution = useMemo(
-    () => scored.map((a, i) => ({
-      i: i + 1,
-      label: new Date(a.created_at).toLocaleDateString(undefined, { day: "2-digit", month: "short" }),
-      score: Math.round(a.overall_score || 0),
-    })),
-    [scored]
-  );
+  // wire daily reminder
+  useEffect(() => {
+    if (!profile.notifEnabled || !profile.notifTime) return;
+    const stop = startDailyReminder(profile.notifTime, "CourtMind", t("home.cta.start"));
+    return stop;
+  }, [profile.notifEnabled, profile.notifTime, t]);
 
-  // Sessions per week (last 8 weeks)
-  const weekly = useMemo(() => buildWeekly(workouts, scored), [workouts, scored]);
+  const update = (patch: Profile) => {
+    const next = { ...profile, ...patch };
+    setProfileState(next);
+    saveProfile(patch);
+  };
 
-  // Stats
-  const last = scored[scored.length - 1];
-  const prev = scored[scored.length - 2];
-  const trend = last && prev ? (last.overall_score! - prev.overall_score!) : 0;
-  const best = scored.reduce((m, a) => Math.max(m, a.overall_score || 0), 0);
-  const avg = scored.length ? scored.reduce((s, a) => s + (a.overall_score || 0), 0) / scored.length : 0;
-  const streak = computeStreak(workouts);
+  const onPhoto = (file: File) => {
+    const r = new FileReader();
+    r.onload = () => update({ photoDataUrl: String(r.result) });
+    r.readAsDataURL(file);
+  };
 
-  // Badges
-  const badges = computeBadges({ scored, workouts, best, streak });
+  const enableNotifs = async () => {
+    const p = await requestNotifPermission();
+    if (p === "granted") update({ notifEnabled: true, notifTime: profile.notifTime || "18:00" });
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  };
+
+  const stats = useMemo(() => {
+    const total = workouts.length;
+    const minutes = workouts.reduce((s, w) => s + (w.durationMinutes || 0), 0);
+    const days = new Set(workouts.map((w) => new Date(w.date).toISOString().slice(0, 10)));
+    let streak = 0; const d = new Date();
+    for (;;) {
+      const k = d.toISOString().slice(0, 10);
+      if (days.has(k)) { streak++; d.setDate(d.getDate() - 1); } else break;
+    }
+    return { total, minutes, streak };
+  }, [workouts]);
+
+  const initial = (profile.name || email || "?").charAt(0).toUpperCase();
+  const perm = typeof window !== "undefined" ? notifPermission() : "default";
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
-      <header className="sticky top-0 z-40 glass border-b hairline">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <Link to="/home" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground">
-             Home
-          </Link>
-          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">Profile</p>
-          <button onClick={() => router.invalidate()} className="text-[13px] text-muted-foreground hover:text-foreground">Refresh</button>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[720px] items-center justify-between px-5 py-4">
+          <Link to="/home" className="text-[14px] text-muted-foreground hover:text-foreground">{t("common.back")}</Link>
+          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">{t("profile.title")}</p>
+          <div className="w-10" />
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
+      <main className="mx-auto max-w-[720px] px-5 pb-24 pt-8 space-y-8">
         {/* Identity */}
-        <section className="grid gap-10 lg:grid-cols-[auto_1fr_auto] lg:items-end">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <span className="absolute -inset-0.5 rounded-full platinum-gradient opacity-30 blur-md" aria-hidden />
-              <span className="relative grid h-20 w-20 place-items-center rounded-full bg-foreground text-2xl font-medium text-background">
-                {(profile.name || "S").charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Athlete</p>
-              <h1 className="mt-2 text-balance text-[clamp(2rem,4vw,3rem)] font-medium leading-[1] tracking-[-0.04em]">
-                {profile.name || "Sofia Martins"}
-              </h1>
-              <p className="mt-2 text-[13px] text-muted-foreground">
-                {(profile.sport || "Tennis")} · <span className="capitalize">{profile.level || "intermediate"}</span>
-                {profile.goal && <> · {profile.goal}</>}
-              </p>
-            </div>
-          </div>
-          <div />
-          <Link to="/history" className="hidden lg:inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[13px] hover:bg-foreground/5">
-             Open archive
-          </Link>
-        </section>
-
-        {/* KPI strip */}
-        <section className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Kpi label="Latest score" value={last ? `${Math.round(last.overall_score!)}` : "—"}
-            hint={prev ? `${trend > 0 ? "+" : ""}${trend.toFixed(1)} vs prev` : undefined}
-          />
-          <Kpi label="Best score" value={best ? `${Math.round(best)}` : "—"} />
-          <Kpi label="Avg. score" value={avg ? avg.toFixed(1) : "—"} />
-          <Kpi label="Streak" value={`${streak} ${streak === 1 ? "day" : "days"}`} />
-        </section>
-
-        {/* Evolution chart */}
-        <section className="mt-12 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-          <Card title="Performance evolution" subtitle={evolution.length ? `${evolution.length} analyses` : "No data yet"}>
-            {evolution.length === 0 ? (
-              <EmptyChart label="Run an analysis to start your evolution line." />
+        <section className="flex flex-col items-center text-center">
+          <button onClick={() => fileRef.current?.click()} className="relative">
+            {profile.photoDataUrl ? (
+              <img src={profile.photoDataUrl} alt="" className="h-24 w-24 rounded-full object-cover ring-1 ring-border" />
             ) : (
-              <div className="h-[260px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={evolution} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
-                    <defs>
-                      <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="currentColor" strokeOpacity={0.06} vertical={false} />
-                    <XAxis dataKey="label" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis domain={[0, 100]} stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} axisLine={false} width={32} />
-                    <Tooltip
-                      cursor={{ stroke: "currentColor", strokeOpacity: 0.2 }}
-                      contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
-                      labelStyle={{ color: "var(--muted-foreground)" }}
-                    />
-                    <Area type="monotone" dataKey="score" stroke="currentColor" strokeWidth={1.5} fill="url(#grad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <span className="grid h-24 w-24 place-items-center rounded-full bg-foreground text-3xl font-medium text-background">{initial}</span>
             )}
-          </Card>
-
-          <Card title="Sessions per week" subtitle="Last 8 weeks">
-            {weekly.every(w => w.sessions === 0) ? (
-              <EmptyChart label="Log workouts or analyses to see weekly activity." />
-            ) : (
-              <div className="h-[260px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weekly} margin={{ top: 10, right: 8, bottom: 0, left: -24 }}>
-                    <CartesianGrid stroke="currentColor" strokeOpacity={0.06} vertical={false} />
-                    <XAxis dataKey="label" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
-                    <Tooltip
-                      cursor={{ fill: "currentColor", fillOpacity: 0.05 }}
-                      contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }}
-                    />
-                    <Bar dataKey="sessions" fill="currentColor" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </Card>
+            <span className="absolute bottom-0 right-0 rounded-full border bg-background px-2 py-0.5 text-[10px] uppercase tracking-wider">{t("common.edit")}</span>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])} />
+          {profile.photoDataUrl && (
+            <button onClick={() => update({ photoDataUrl: undefined })} className="mt-2 text-[12px] text-muted-foreground hover:text-foreground">{t("profile.photo.remove")}</button>
+          )}
+          <h1 className="mt-5 text-2xl font-medium tracking-tight">{profile.name || t("common.guest")}</h1>
+          {email && <p className="mt-1 text-[13px] text-muted-foreground">{email}</p>}
         </section>
 
-        {/* Badges */}
-        <section className="mt-12">
-          <SectionHeader title="Milestones" hint={`${badges.filter(b => b.earned).length} / ${badges.length}`} />
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {badges.map(b => <BadgeCard key={b.id} badge={b} />)}
-          </div>
+        {/* Workout stats */}
+        <section className="grid grid-cols-3 gap-3">
+          <Stat label={t("profile.stat.workouts")} value={String(stats.total)} />
+          <Stat label={t("profile.stat.minutes")} value={String(stats.minutes)} />
+          <Stat label={t("profile.stat.streak")} value={String(stats.streak)} />
         </section>
 
-        {/* Recent analyses */}
-        <section className="mt-12">
-          <div className="flex items-end justify-between gap-3">
-            <SectionHeader title="Recent analyses" />
-            <Link to="/history" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-              See all 
-            </Link>
+        {/* Edit profile */}
+        <Group title={t("profile.edit")}>
+          <Row label={t("profile.name")}>
+            <input value={profile.name || ""} onChange={(e) => update({ name: e.target.value })}
+              className="w-full bg-transparent text-right text-[15px] focus:outline-none" placeholder="—" />
+          </Row>
+          <Row label={t("profile.email")}>
+            <input value={profile.email || ""} onChange={(e) => update({ email: e.target.value })}
+              className="w-full bg-transparent text-right text-[15px] focus:outline-none" placeholder={email || "—"} />
+          </Row>
+        </Group>
+
+        {/* Training */}
+        <Group title={t("profile.training")}>
+          <Row label={t("profile.sport")}>
+            <input value={profile.sport || ""} onChange={(e) => update({ sport: e.target.value })}
+              className="w-full bg-transparent text-right text-[15px] focus:outline-none" placeholder="—" />
+          </Row>
+          <Row label={t("profile.level")}>
+            <select value={profile.level || ""} onChange={(e) => update({ level: e.target.value as Profile["level"] })}
+              className="bg-transparent text-right text-[15px] focus:outline-none">
+              <option value="">—</option>
+              <option value="beginner">{t("onb.level.beginner")}</option>
+              <option value="intermediate">{t("onb.level.intermediate")}</option>
+              <option value="advanced">{t("onb.level.advanced")}</option>
+            </select>
+          </Row>
+          <Row label={t("profile.goal")}>
+            <input value={profile.goal || ""} onChange={(e) => update({ goal: e.target.value })}
+              className="w-full bg-transparent text-right text-[15px] focus:outline-none" placeholder="—" />
+          </Row>
+          <Row label={t("profile.frequency")}>
+            <input value={profile.frequency || ""} onChange={(e) => update({ frequency: e.target.value })}
+              className="w-full bg-transparent text-right text-[15px] focus:outline-none" placeholder="—" />
+          </Row>
+        </Group>
+
+        {/* Language */}
+        <Group title={t("common.language")}>
+          <Row label={t("common.language")}>
+            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)}
+              className="bg-transparent text-right text-[15px] focus:outline-none">
+              {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+            </select>
+          </Row>
+        </Group>
+
+        {/* Theme */}
+        <Group title={t("profile.appearance")}>
+          <div className="flex gap-2 p-1">
+            {(["system", "light", "dark"] as const).map((m) => (
+              <button key={m} onClick={() => setMode(m)}
+                className={`flex-1 rounded-xl px-3 py-2 text-[13px] transition ${mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
+                {t(`profile.theme.${m}`)}
+              </button>
+            ))}
           </div>
-          <div className="mt-5 grid gap-3">
-            {scored.length === 0 ? (
-              <div className="rounded-2xl border hairline bg-card p-8 text-center text-[14px] text-muted-foreground">
-                No analyses yet. <Link to="/analyze" className="underline text-foreground">Run your first one</Link>.
-              </div>
-            ) : (
-              scored.slice().reverse().slice(0, 5).map(a => <RecentRow key={a.id} row={a} />)
-            )}
-          </div>
-        </section>
+        </Group>
+
+        {/* Notifications */}
+        <Group title={t("profile.notifications")}>
+          {!notifSupported() ? (
+            <p className="px-4 py-3 text-[13px] text-muted-foreground">—</p>
+          ) : perm === "denied" ? (
+            <p className="px-4 py-3 text-[13px] text-muted-foreground">{t("profile.notif.blocked")}</p>
+          ) : perm !== "granted" ? (
+            <button onClick={enableNotifs} className="w-full px-4 py-3 text-left text-[15px] text-foreground hover:bg-foreground/5">{t("profile.notif.allow")}</button>
+          ) : (
+            <>
+              <Row label={t("profile.notif.enable")}>
+                <input type="checkbox" checked={!!profile.notifEnabled}
+                  onChange={(e) => update({ notifEnabled: e.target.checked })} className="h-5 w-5" />
+              </Row>
+              <Row label={t("profile.notif.time")}>
+                <input type="time" value={profile.notifTime || "18:00"}
+                  onChange={(e) => update({ notifTime: e.target.value })}
+                  className="bg-transparent text-right text-[15px] focus:outline-none" />
+              </Row>
+            </>
+          )}
+        </Group>
+
+        {/* Account */}
+        <Group title={t("profile.account")}>
+          <button onClick={signOut} className="w-full px-4 py-3 text-left text-[15px] text-destructive hover:bg-foreground/5">{t("profile.signout")}</button>
+        </Group>
       </main>
     </div>
   );
 }
 
-/* ---------------- pieces ---------------- */
-
-function Kpi({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon?: React.ReactNode }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border hairline bg-card p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-        <span className="text-foreground/70">{icon}</span>
-      </div>
-      <p className="mt-3 text-3xl font-medium tracking-tight">{value}</p>
-      {hint && <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p>}
+    <div className="rounded-2xl border bg-card p-4 text-center">
+      <p className="text-2xl font-medium tracking-tight">{value}</p>
+      <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl border hairline bg-card p-5 sm:p-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{title}</p>
-          {subtitle && <p className="mt-1 text-[12px] text-muted-foreground/80">{subtitle}</p>}
-        </div>
-      </div>
-      <div className="mt-5">{children}</div>
-    </div>
+    <section>
+      <p className="px-1 pb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      <div className="overflow-hidden rounded-2xl border bg-card divide-y">{children}</div>
+    </section>
   );
 }
 
-function EmptyChart({ label }: { label: string }) {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid h-[260px] place-items-center rounded-2xl border hairline border-dashed text-center">
-      <p className="max-w-xs text-[13px] text-muted-foreground">{label}</p>
-    </div>
+    <label className="flex items-center justify-between gap-4 px-4 py-3">
+      <span className="text-[14px] text-muted-foreground">{label}</span>
+      <span className="flex-1 max-w-[60%] text-right">{children}</span>
+    </label>
   );
-}
-
-function SectionHeader({ icon, title, hint }: { icon?: React.ReactNode; title: string; hint?: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-        {icon} {title}
-      </p>
-      {hint && <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function BadgeCard({ badge }: { badge: Badge }) {
-  return (
-    <div className={`group rounded-2xl border p-5 transition ${
-      badge.earned ? "bg-card hairline" : "bg-card/40 hairline opacity-60"
-    }`}>
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] uppercase tracking-[0.24em] ${
-          badge.earned ? "text-foreground" : "text-muted-foreground"
-        }`}>
-          {badge.earned ? "Earned" : "Locked"}
-        </span>
-      </div>
-      <p className="mt-4 text-[14px] font-medium tracking-tight">{badge.title}</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{badge.detail}</p>
-      {!badge.earned && badge.progress != null && (
-        <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-foreground/10">
-          <div className="h-full bg-foreground/60" style={{ width: `${Math.min(100, badge.progress)}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RecentRow({ row }: { row: AnalysisRow }) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border hairline bg-card p-4">
-      <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          {new Date(row.created_at).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
-        </p>
-        <p className="mt-1 truncate text-[14px] font-medium tracking-tight">{row.verdict || "Performance review"}</p>
-      </div>
-      <p className="text-2xl font-medium tracking-tight">{Math.round(row.overall_score ?? 0)}</p>
-    </div>
-  );
-}
-
-/* ---------------- helpers ---------------- */
-
-type Badge = { id: string; title: string; detail: string; earned: boolean; progress?: number };
-
-function computeBadges({
-  scored, workouts, best, streak,
-}: { scored: AnalysisRow[]; workouts: WorkoutEntry[]; best: number; streak: number }): Badge[] {
-  const total = scored.length + workouts.length;
-  const improving = scored.length >= 2 && (scored[scored.length - 1].overall_score! >= scored[0].overall_score!);
-  return [
-    { id: "first", title: "First step", detail: "Complete your first analysis.", earned: scored.length >= 1, progress: scored.length >= 1 ? 100 : 0 },
-    { id: "five",  title: "Consistent", detail: "Log 5 sessions in total.", earned: total >= 5, progress: Math.round((total / 5) * 100) },
-    { id: "streak3", title: "On a roll", detail: "Train 3 days in a row.", earned: streak >= 3, progress: Math.round((streak / 3) * 100) },
-    { id: "best80", title: "Sharp form", detail: "Reach a score of 80+.", earned: best >= 80, progress: Math.round((best / 80) * 100) },
-    { id: "improve", title: "Trending up", detail: "Improve from your first analysis.", earned: improving, progress: improving ? 100 : 50 },
-    { id: "ten", title: "Committed", detail: "Reach 10 total sessions.", earned: total >= 10, progress: Math.round((total / 10) * 100) },
-    { id: "best90", title: "Elite touch", detail: "Reach a score of 90+.", earned: best >= 90, progress: Math.round((best / 90) * 100) },
-    { id: "month", title: "One month in", detail: "30 days since your first session.", earned: hasMonth(scored, workouts), progress: hasMonth(scored, workouts) ? 100 : 0 },
-  ];
-}
-
-function hasMonth(scored: AnalysisRow[], workouts: WorkoutEntry[]) {
-  const dates = [...scored.map(s => s.created_at), ...workouts.map(w => w.date)].map(d => +new Date(d));
-  if (!dates.length) return false;
-  const first = Math.min(...dates);
-  return Date.now() - first >= 30 * 24 * 60 * 60 * 1000;
-}
-
-function computeStreak(workouts: WorkoutEntry[]) {
-  if (!workouts.length) return 0;
-  const days = new Set(workouts.map(w => new Date(w.date).toISOString().slice(0, 10)));
-  let streak = 0;
-  const d = new Date();
-  for (;;) {
-    const key = d.toISOString().slice(0, 10);
-    if (days.has(key)) { streak++; d.setDate(d.getDate() - 1); }
-    else break;
-  }
-  return streak;
-}
-
-function buildWeekly(workouts: WorkoutEntry[], scored: AnalysisRow[]) {
-  const buckets: { label: string; sessions: number; start: Date }[] = [];
-  const now = new Date();
-  // start of current week (Mon)
-  const monday = new Date(now);
-  const day = (monday.getDay() + 6) % 7;
-  monday.setDate(monday.getDate() - day);
-  monday.setHours(0, 0, 0, 0);
-
-  for (let i = 7; i >= 0; i--) {
-    const start = new Date(monday); start.setDate(monday.getDate() - i * 7);
-    buckets.push({ label: start.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" }), sessions: 0, start });
-  }
-  const all = [...workouts.map(w => +new Date(w.date)), ...scored.map(a => +new Date(a.created_at))];
-  for (const t of all) {
-    for (let i = buckets.length - 1; i >= 0; i--) {
-      const s = +buckets[i].start;
-      const e = s + 7 * 24 * 60 * 60 * 1000;
-      if (t >= s && t < e) { buckets[i].sessions++; break; }
-    }
-  }
-  return buckets.map(({ label, sessions }) => ({ label, sessions }));
 }
