@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PlanRouteImport } from './routes/plan'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -31,6 +32,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PlanRoute = PlanRouteImport.update({
   id: '/plan',
   path: '/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
+    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
+    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/history'
+    | '/onboarding'
     | '/plan'
     | '/profile'
     | '/reset-password'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
+  OnboardingRoute: typeof OnboardingRoute
   PlanRoute: typeof PlanRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/plan'
       fullPath: '/plan'
       preLoaderRoute: typeof PlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
+  OnboardingRoute: OnboardingRoute,
   PlanRoute: PlanRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
