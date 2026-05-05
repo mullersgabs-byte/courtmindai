@@ -1,162 +1,84 @@
-# Premium Training UI + Real 3D Avatar System
+# Plano — CourtMind Premium
 
-## Goals (in priority order)
+Reestruturar o app preto-e-branco minimalista (referência das mockups que você enviou) em um produto com cara de SaaS pronto para produção, mantendo a fonte atual (Inter) e elevando-a com o tratamento tipográfico estilo Apple (SF).
 
-1. Replace the current stick-figure SVG avatar everywhere with a **real 3D humanoid** rendered via React Three Fiber, using the provided FBX animations.
-2. Rebuild `/exercise` (and the entry from `/training`) into an **Apple-Fitness-style** training screen: prominent timer, large pause/continue, ring progress, and an exercise selector list.
-3. Strict fallback policy: if 3D fails to load, render a clean 2D silhouette card. **Never** render the stick figure again. Remove `SportAvatar` stick SVG entirely.
-4. Remove all emojis from UI strings across the app.
+## 1. Sistema de design (base)
+- **Tipografia Apple-like**: ativar `-apple-system, BlueprintHF, "SF Pro Display"` como primária com Inter como fallback. Escala consistente: Display 40/-3.5%, Title 28, Headline 20, Body 15, Caption 11 uppercase tracking 0.24em. Aplicar `font-feature-settings: "ss01","cv11","tnum"` para números tabulares.
+- **Tokens em `src/styles.css`**: refinar `--surface-1/2/3` (fundos em camadas), `--hairline`, `--accent-press`, raios (`--r-card 28px`, `--r-pill 999px`), sombras (`--shadow-1` sutil, `--shadow-elev` em hover).
+- **Microinterações globais**: classes utilitárias `.press` (scale 0.98 + shadow), `.shimmer`, `.skeleton`, `.fade-up`, `.tap-haptic` (ripple).
+- **Componentes novos**: `Button` (variants: primary/ghost/quiet), `Card`, `StatTile`, `SectionHeader`, `EmptyState`, `LoadingSkeleton`, `Toast`, `Sheet` (bottom sheet iOS-style), `ProgressRing`.
 
-## 1. 3D Avatar System
-
-### Dependencies (added via `bun add`)
-
-- `three`
-- `@react-three/fiber`
-- `@react-three/drei`
-
-(FBX loading uses `three/examples/jsm/loaders/FBXLoader` — already shipped with `three`, no extra package.)
-
-### Assets
-
-Copy the uploaded FBX files into `public/avatars/` (served statically):
-
-```
-public/avatars/
-  push-up.fbx          (Push_Up_To_Idle.fbx)
-  goalkeeper-side.fbx  (Goalkeeper_Sidestep_1_1.fbx)
-  cross-jumps.fbx      (Cross_Jumps.fbx)
-  baseball-strike.fbx  (Baseball_Strike_1.fbx)
-  jog-back.fbx         (Jog_Backward_Diagonal_1.fbx)
-```
-
-(Duplicates `_-_Copia` / `-2` are ignored — same files.)
-
-The FBX files include both mesh + rig + animation (Mixamo-style). We load the mesh from one canonical file and overlay other clips when the user switches movement.
-
-### New component: `src/components/Avatar3D.tsx`
-
-- Wraps a `<Canvas>` (R3F) with:
-  - Soft three-point lighting (ambient + directional key + rim) — Apple Fitness vibe.
-  - Neutral light-grey ground plane with contact shadow (`<ContactShadows>` from drei).
-  - Camera: perspective, slight angle, auto-frames the model.
-  - `<OrbitControls enableZoom={false} enablePan={false} />` for subtle interaction (optional).
-- Loads an FBX via `useLoader(FBXLoader, url)`.
-- Recolors all mesh materials to a clean white (`#FFFFFF`), `roughness: 0.55`, `metalness: 0.05`, removes textures (premium clean look, no face detail).
-- Plays the embedded animation clip in a loop using `THREE.AnimationMixer`, advanced in `useFrame`.
-- Props: `clipUrl: string`, `paused?: boolean`, `className?: string`.
-- Suspense boundary + `<Loader2D />` fallback while the FBX downloads.
-- `ErrorBoundary` → falls back to `<Avatar2D />` (no stick figure).
-
-### New component: `src/components/Avatar2D.tsx`
-
-A clean, premium **3D silhouette** (single SVG path of a human silhouette, soft gradient fill, subtle drop shadow). Used only as fallback. No lines, no stick limbs.
-
-### Movement → clip mapping (`src/lib/avatarClips.ts`)
-
-```ts
-export const CLIPS = {
-  pushup:    "/avatars/push-up.fbx",
-  squat:     "/avatars/cross-jumps.fbx",   // closest available; biomechanical squat-jump
-  plank:     "/avatars/push-up.fbx",       // hold pose / static (paused mixer)
-  jogging:   "/avatars/jog-back.fbx",
-  sprint:    "/avatars/jog-back.fbx",      // played at higher mixer.timeScale
-  jab:       "/avatars/baseball-strike.fbx",
-  jab_cross: "/avatars/baseball-strike.fbx",
-  footwork:  "/avatars/goalkeeper-side.fbx",
-  yoga:      "/avatars/push-up.fbx",       // static pose, paused
-};
-```
-
-Each exercise in the app declares a `movement` key. Unknown sport → `footwork` default. Avatar component accepts `speed` to scale animation.
-
-### Removal
-
-- Delete the SVG body in `src/components/SportAvatar.tsx`. Replace its export with a thin wrapper that renders `<Avatar3D clipUrl={…}/>` so existing imports keep working.
-- Remove the small "reference" mini-avatar grid (currently shows another stick figure).
-
-## 2. Training Screen Rebuild
-
-Rewrite `src/routes/exercise.tsx` (kept route, new layout). Add a small landing strip on `/training` that links into it with a chosen exercise.
-
-### Layout (mobile-first, viewport 390px)
-
+## 2. Jornada do usuário
 ```text
-┌──────────────────────────────┐
-│  ← Back        Tennis · 03/12│
-├──────────────────────────────┤
-│                              │
-│        [ 3D AVATAR ]         │
-│      (full-bleed canvas)     │
-│                              │
-├──────────────────────────────┤
-│       Lateral split-step     │
-│                              │
-│        ╭──────────╮          │
-│        │  02:14    │ ring     │
-│        ╰──────────╯          │
-│                              │
-│   [   Pause   ]  [ Skip ]    │
-│                              │
-├──────────────────────────────┤
-│  EXERCISES                   │
-│  ▸ Warm-up         · 5 min   │
-│  ● Lateral split   · 4×30s   │
-│  ▸ Push-ups        · 3×12    │
-│  ▸ Sprint          · 6×20s   │
-│  ▸ Cooldown        · 5 min   │
-└──────────────────────────────┘
+/  (landing) ─► /onboarding (3 passos) ─► /home (dashboard)
+                                          ├─ /training (sessão)
+                                          ├─ /feedback (detalhe IA)
+                                          ├─ /history (timeline)
+                                          ├─ /plan (programa 6 sem.)
+                                          └─ /profile (config)
 ```
+- Landing já está no estilo. Polir hero card e CTA principal único ("Começar agora").
+- Onboarding: 3 telas (esporte, nível, objetivo) com progress dots + transições suaves.
+- TabBar inferior com 4 ícones (lucide) + indicador animado.
 
-### Components / behavior
+## 3. Home (impactante)
+- Saudação personalizada + foto/inicial.
+- **Hero "Próxima sessão"**: card preto com exercício sugerido do dia, duração estimada e botão "Começar".
+- **Anel de progresso semanal** (ProgressRing SVG) — sessões da meta, minutos, calorias estimadas.
+- Stats grid com números grandes (sessões, minutos, streak 🔥 substituído por ícone Flame).
+- **Insights inteligentes**: card que mostra a métrica que mais melhorou ("Backhand: +18% precisão esta semana") — calculado do localStorage de feedbacks.
+- Atividade recente com swipe-to-detail.
+- Estados: empty ("Nenhum treino ainda — vamos começar?"), loading skeleton.
 
-- **Timer**: keep existing `phase / setIdx / remaining` state. Big SF-mono digits; circular SVG progress ring; phase label (Get ready / Work / Rest / Complete).
-- **Controls**: large pill buttons — primary `Pause` (toggles to `Resume`), secondary `Skip phase`, tertiary `Reset`.
-- **Exercise selector**: vertical list of cards with name, type tag, duration. Click → loads that exercise's clip into the avatar and resets the timer to its config. Active row highlighted with a subtle hairline.
-- **3D Canvas**: top section, ~45% viewport height on mobile, `aspect-[4/5]` on desktop. Pauses the animation mixer when `running === false`.
+## 4. Training (sessão)
+- Fluxo já existe; refinar:
+  - Tela permission com 3 ícones (Camera, Lock, Eye-off) + cópia clara.
+  - Gravação com timer grande, anel de progresso ao redor do botão record, badge "REC" pulsante.
+  - Pós-análise: card de resultado com score em ProgressRing 0–100, verdict, listas com ícones (Check, AlertTriangle, ArrowUp).
+  - Botão "Ver feedback completo" → /feedback.
+  - Sucesso/erro via Toast (sonner).
 
-### Data
+## 5. Feedback / IA (diferenciação)
+- Página com:
+  - **Score circular grande** + delta vs sessão anterior.
+  - Cards por dimensão (técnica, postura, ritmo) com barras.
+  - Lista de "Pontos fortes" / "Erros detectados" / "Próximos passos" com ícones.
+  - CTA "Iniciar plano de 6 semanas" → /plan.
+- Histórico de scores (mini-chart SVG, sem libs).
 
-A small static array of exercises lives in `src/lib/exerciseLibrary.ts`:
+## 6. Plan (programa curado)
+- Lista das 6 semanas com check de conclusão, exercícios por sessão, % de progresso por semana.
+- Botão "Marcar sessão concluída" alimenta streak e insights.
 
-```ts
-{ id, name, type, sets, workSec, restSec, movement, sportTag }
-```
+## 7. Profile / Settings
+- Cabeçalho com avatar (upload), nome, esporte, nível, idioma.
+- Seções: Conta, Preferências (tema, idioma, notificações), Plano ativo, Privacidade, Sobre.
+- Toggle de notificações que dispara `Notification.requestPermission()` e agenda lembrete diário simples.
+- Botão sair com confirmação (AlertDialog).
 
-`/training` "Start session" CTA navigates to `/exercise?id=...`.
+## 8. Engajamento
+- **Streak diária** + badge ao bater marcos (3, 7, 30 dias) — armazenado em localStorage.
+- **Meta semanal** configurável no perfil (default 4 sessões), exibida no anel da Home.
+- **Toasts contextuais**: "+1 sessão • streak 5 dias", "Recorde de score!".
+- Notificação local opcional 1x/dia se logado e sem treino do dia.
 
-## 3. App-wide Cleanup
+## 9. Estados (loading / erro / vazio)
+- Skeletons em Home e History durante hidratação.
+- ErrorBoundary por rota (TanStack `errorComponent`) com cópia útil + retry.
+- EmptyState reutilizável com ícone, título, descrição e CTA.
 
-- Remove emoji characters from any user-facing strings (scan `src/routes/*.tsx`, `src/components/*.tsx`, `src/lib/i18n.tsx`).
-- Keep the existing pure black/white token system. Add a `--surface-soft` (very light grey) only for the 3D ground plane and exercise card hover.
-- Confirm `home.tsx` "Today's session" card uses `<Avatar3D>` thumbnail (or omits avatar) — never the stick figure.
+## 10. i18n
+- Auditar todas as chaves novas em PT/EN/ES/FR (insights, badges, toasts, settings).
 
-## Technical Notes
+## 11. Qualidade / produção
+- Tipos estritos nos novos hooks (`useStreak`, `useWeeklyStats`, `useInsights`).
+- Animações via CSS (sem libs extras).
+- Sem emojis (regra já estabelecida) — todos os ícones via `lucide-react`.
 
-- **Bundle size**: three + drei ≈ 600KB gzipped. Acceptable for a fitness app whose hero is the 3D avatar. Lazy-load the `Avatar3D` component with `React.lazy` so the marketing/landing pages stay light.
-- **SSR**: R3F is client-only. Wrap `<Avatar3D>` in a `typeof window !== 'undefined'` guard + `lazy` import to avoid SSR crashes in TanStack Start.
-- **FBX served from `/public**`: works in TanStack Start dev + Cloudflare Worker prod (static assets). No special config.
-- **No stick figure** ever rendered: `SportAvatar` becomes pure proxy → `Avatar3D` → on error → `Avatar2D` silhouette → on fatal error → `null`.
+## Detalhes técnicos
+- Arquivos novos: `src/components/ui-app/{Button,Card,StatTile,SectionHeader,EmptyState,ProgressRing,Sheet}.tsx`, `src/lib/insights.ts`, `src/lib/streak.ts`, `src/hooks/useWeeklyStats.ts`.
+- Arquivos editados: `src/styles.css` (tokens + escala tipográfica), `src/routes/index.tsx`, `home.tsx`, `training.tsx`, `feedback.tsx`, `plan.tsx`, `profile.tsx`, `onboarding.tsx`, `history.tsx`, `__root.tsx` (Sonner Toaster + ErrorBoundary), `TabBar.tsx` (ícones lucide + indicador animado), `i18n.tsx`.
+- Sem novas dependências (lucide-react e sonner já estão no projeto).
+- Dados continuam em localStorage (já temos Cloud, mas o overhaul é UX/UI; podemos plugar persistência depois sem reescrever telas).
 
-## Files
-
-Created
-
-- `src/components/Avatar3D.tsx`
-- `src/components/Avatar2D.tsx`
-- `src/lib/avatarClips.ts`
-- `src/lib/exerciseLibrary.ts`
-- `public/avatars/*.fbx` (5 files)
-
-Edited
-
-- `src/components/SportAvatar.tsx` (becomes thin wrapper, no SVG)
-- `src/routes/exercise.tsx` (new layout: 3D + timer + selector)
-- `src/routes/training.tsx` (link cards pass `?id=` to exercise)
-- `src/routes/home.tsx` (replace any avatar usage; remove emojis)
-- `package.json` (three, @react-three/fiber, @react-three/drei)
-
-## Out of scope
-
-- Custom Mixamo-quality animations for sports without source FBX (we map to the closest provided clip and label honestly — no fake/incorrect movements).
-- Auth/security changes.
+Ao aprovar, eu implemento na sequência: design system → Home/TabBar → Training/Feedback → Plan/Profile → Engajamento (streak/insights) → polimento e i18n.
