@@ -3,7 +3,6 @@ import appCss from "../styles.css?url";
 import { I18nProvider, useT } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { LanguageGate } from "@/components/LanguageGate";
-import { Toaster } from "sonner";
 
 function NotFoundComponent() {
   const { t } = useT();
@@ -42,19 +41,6 @@ export const Route = createRootRoute({
       <I18nProvider>
         <LanguageGate>
           <Outlet />
-          <Toaster
-            position="top-center"
-            theme="system"
-            toastOptions={{
-              style: {
-                background: "var(--popover)",
-                color: "var(--popover-foreground)",
-                border: "1px solid var(--border)",
-                borderRadius: "14px",
-                fontSize: "13px",
-              },
-            }}
-          />
         </LanguageGate>
       </I18nProvider>
     </ThemeProvider>
