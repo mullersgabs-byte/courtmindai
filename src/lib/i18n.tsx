@@ -312,6 +312,15 @@ const dictionaries: Record<Lang, Dict> = {
     "lang.choose": "Elige tu idioma",
     "lang.continue": "Continuar",
 
+    "app.ready": "Aplicación de entrenamiento",
+    "app.main.title": "Tu entreno empieza aquí.",
+    "app.main.subtitle": "Abre la app, elige tu deporte, graba tu entreno y sigue tu evolución en un solo lugar.",
+    "app.start": "Empezar",
+    "app.login": "Entrar",
+    "app.sections": "App",
+    "app.profile.description": "Edita nombre, correo, foto, deporte, objetivo, recordatorios y apariencia.",
+    "app.open.home": "Abrir inicio",
+
     "auth.title.signin": "Entrar",
     "auth.title.signup": "Crear cuenta",
     "auth.title.forgot": "Restablecer contraseña",
@@ -441,6 +450,15 @@ const dictionaries: Record<Lang, Dict> = {
 
     "lang.choose": "Choisis ta langue",
     "lang.continue": "Continuer",
+
+    "app.ready": "Application d'entraînement",
+    "app.main.title": "Ton entraînement commence ici.",
+    "app.main.subtitle": "Ouvre l'app, choisis ton sport, filme ton entraînement et suis ta progression au même endroit.",
+    "app.start": "Commencer",
+    "app.login": "Connexion",
+    "app.sections": "App",
+    "app.profile.description": "Modifie nom, e-mail, photo, sport, objectif, rappels et apparence.",
+    "app.open.home": "Ouvrir l'accueil",
 
     "auth.title.signin": "Connexion",
     "auth.title.signup": "Créer un compte",
