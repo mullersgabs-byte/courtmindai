@@ -297,7 +297,7 @@ function InputView({
             mode === "video" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          🎥 Vídeo
+          Vídeo
         </button>
         <button
           onClick={() => setMode("text")}
@@ -305,7 +305,7 @@ function InputView({
             mode === "text" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          ✍️ Texto
+          Texto
         </button>
       </div>
 
@@ -504,7 +504,7 @@ function ErrorView({
 function BlockedView({ message, onReset }: { message: string; onReset: () => void }) {
   return (
     <div className="mx-auto max-w-xl py-16 text-center animate-fade-in">
-      <span className="grid h-14 w-14 mx-auto place-items-center rounded-full bg-warn/10 text-warn">⚠</span>
+      <span className="grid h-14 w-14 mx-auto place-items-center rounded-full border border-warn/40 text-warn text-xl">!</span>
       <h2 className="mt-6 text-2xl font-medium tracking-tight">Conteúdo não aceito</h2>
       <p className="mt-3 text-[14px] text-muted-foreground">{message}</p>
       <button
