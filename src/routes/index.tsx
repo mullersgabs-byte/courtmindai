@@ -16,14 +16,23 @@ function Index() {
   const { t } = useT();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto flex min-h-screen max-w-[440px] flex-col px-5 pb-10 pt-6">
-        {/* Top bar */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-[12px] font-semibold text-background">CM</span>
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {/* Ambient premium backdrop */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-radial-court" />
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-foreground/[0.06] blur-3xl" />
+        <div className="absolute bottom-[-160px] right-[-120px] h-[420px] w-[420px] rounded-full bg-foreground/[0.04] blur-3xl" />
+        <div className="absolute inset-0 grain opacity-60" />
+      </div>
+
+      <main className="relative mx-auto flex min-h-screen max-w-[480px] flex-col px-5 pb-10 pt-6">
+        <header className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full border border-foreground/15 bg-foreground/[0.04] text-[13px] font-semibold tracking-tight">
+              CM
+            </span>
             <div className="leading-tight">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{t("app.ready")}</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-muted-foreground">{t("app.ready")}</p>
               <p className="text-[14px] font-semibold tracking-tight">CourtMind</p>
             </div>
           </div>
@@ -31,75 +40,70 @@ function Index() {
             <LanguageSwitcher />
             <Link
               to="/auth"
-              className="inline-flex h-9 items-center justify-center rounded-full border border-foreground/15 px-4 text-[13px] font-medium transition hover:bg-foreground/[0.06]"
+              className="inline-flex h-9 items-center justify-center rounded-full border border-foreground/15 bg-foreground/[0.03] px-4 text-[13px] font-medium text-foreground/90 transition hover:bg-foreground/[0.07]"
             >
               {t("auth.title.signin")}
             </Link>
           </div>
         </header>
 
-        {/* Pill tabs */}
-        <nav className="mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Pill active>{t("home.title")}</Pill>
-          <Pill>{t("training.title")}</Pill>
-          <Pill>{t("profile.title")}</Pill>
-          <Pill>{t("profile.notifications")}</Pill>
-        </nav>
-
-        {/* Hero card — big featured tile */}
-        <section className="mt-4 rounded-[28px] bg-foreground p-6 text-background">
-          <div className="flex items-start justify-between">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-background/10 text-[14px]">▶</span>
-            <span className="rounded-full bg-background/10 px-3 py-1 text-[10px] uppercase tracking-[0.22em]">{t("app.ready")}</span>
+        {/* Hero */}
+        <section className="relative mt-10 overflow-hidden rounded-[2.25rem] border border-foreground/10 bg-gradient-to-b from-foreground/[0.06] to-foreground/[0.01] p-7 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+          <div aria-hidden className="absolute inset-x-0 -top-px mx-auto h-px w-1/2 bg-gradient-to-r from-transparent via-foreground/40 to-transparent" />
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-pulse-soft" />
+            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground">{t("home.title")}</p>
           </div>
-          <h2 className="mt-8 text-[34px] font-semibold leading-[1.05] tracking-[-0.035em] text-balance">
+          <h2 className="mt-5 text-[40px] font-semibold leading-[1.05] tracking-[-0.035em] text-balance">
             {t("app.main.title")}
           </h2>
-          <p className="mt-3 text-[14px] leading-relaxed text-background/70">
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground text-pretty">
             {t("app.main.subtitle")}
           </p>
-          <div className="mt-6 flex items-center gap-2">
+          <div className="mt-8 flex flex-col gap-2.5">
             <Link
               to="/onboarding"
-              className="inline-flex h-12 flex-1 items-center justify-between rounded-full bg-background px-5 text-[15px] font-medium text-foreground transition hover:opacity-95"
+              className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-full bg-foreground px-6 text-[15px] font-medium text-background shadow-[0_10px_30px_-10px_rgba(255,255,255,0.35)] transition hover:opacity-95"
             >
-              <span>{t("app.start")}</span>
-              <span aria-hidden className="grid h-7 w-7 place-items-center rounded-full bg-foreground text-background">→</span>
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-background/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+              <span className="relative">{t("app.start")}</span>
             </Link>
             <Link
               to="/auth"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-background/30 px-5 text-[14px] font-medium text-background transition hover:bg-background/10"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-foreground/15 bg-foreground/[0.02] px-6 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.06]"
             >
               {t("app.login")}
             </Link>
           </div>
         </section>
 
-        {/* Stats — big numbers, two-up + one-up grid */}
-        <section className="mt-4 grid grid-cols-2 gap-3">
-          <StatCard value="0" label={t("home.stat.sessions")} />
-          <StatCard value="0" label={t("home.stat.minutes")} />
-          <div className="col-span-2">
-            <StatCard value="0" label={t("home.stat.streak")} wide />
-          </div>
+        {/* Stats strip */}
+        <section className="mt-5 grid grid-cols-3 overflow-hidden rounded-3xl border border-foreground/10 bg-foreground/[0.02] backdrop-blur">
+          <Stat value="0" label={t("home.stat.sessions")} />
+          <div className="border-x border-foreground/10"><Stat value="0" label={t("home.stat.minutes")} /></div>
+          <Stat value="0" label={t("home.stat.streak")} />
         </section>
 
-        {/* Sections list */}
-        <section className="mt-6 space-y-3">
-          <p className="px-1 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{t("app.sections")}</p>
-          <Row title={t("training.title")} description={t("training.subtitle")} to="/training" />
-          <Row title={t("profile.title")} description={t("app.profile.description")} to="/profile" />
-          <Row title={t("profile.notifications")} description={t("notif.body")} to="/profile" />
+        {/* Sections */}
+        <section className="mt-7 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-muted-foreground">{t("app.sections")}</p>
+            <span className="h-px flex-1 ml-3 bg-gradient-to-r from-foreground/15 to-transparent" />
+          </div>
+          <Feature index="01" title={t("training.title")} description={t("training.subtitle")} to="/training" />
+          <Feature index="02" title={t("profile.title")} description={t("app.profile.description")} to="/profile" />
+          <Feature index="03" title={t("profile.notifications")} description={t("notif.body")} to="/profile" />
         </section>
 
         <div className="mt-auto pt-8">
           <Link
             to="/home"
-            className="group flex items-center justify-between rounded-full border border-foreground/12 bg-foreground/[0.03] px-5 py-4 text-[14px] font-medium transition hover:bg-foreground/[0.06]"
+            className="group flex items-center justify-between rounded-full border border-foreground/12 bg-foreground/[0.03] px-6 py-4 text-[14px] font-medium transition hover:bg-foreground/[0.07]"
           >
             <span>{t("app.open.home")}</span>
             <span className="flex items-center gap-1.5 text-muted-foreground transition group-hover:text-foreground">
-              {t("common.continue")} <span aria-hidden>→</span>
+              {t("common.continue")}
+              <span aria-hidden>→</span>
             </span>
           </Link>
         </div>
@@ -108,41 +112,27 @@ function Index() {
   );
 }
 
-function Pill({ children, active }: { children: React.ReactNode; active?: boolean }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <span
-      className={
-        "inline-flex h-9 shrink-0 items-center rounded-full px-4 text-[12.5px] font-medium tracking-tight transition " +
-        (active
-          ? "bg-foreground text-background"
-          : "border border-foreground/15 text-muted-foreground hover:text-foreground")
-      }
-    >
-      {children}
-    </span>
-  );
-}
-
-function StatCard({ value, label, wide }: { value: string; label: string; wide?: boolean }) {
-  return (
-    <div className={"rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 " + (wide ? "flex items-end justify-between" : "")}>
-      <p className="text-[34px] font-semibold leading-none tracking-[-0.03em]">{value}</p>
-      <p className={"text-[10px] uppercase tracking-[0.24em] text-muted-foreground " + (wide ? "" : "mt-3")}>{label}</p>
+    <div className="px-3 py-5 text-center">
+      <p className="text-[26px] font-semibold leading-none tracking-[-0.02em]">{value}</p>
+      <p className="mt-2 text-[9px] font-medium uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function Row({ title, description, to }: { title: string; description: string; to: "/training" | "/profile" }) {
+function Feature({ index, title, description, to }: { index: string; title: string; description: string; to: "/training" | "/profile" }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-4 rounded-3xl border border-foreground/10 bg-foreground/[0.02] px-5 py-4 transition hover:bg-foreground/[0.06]"
+      className="group relative flex items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-5 py-4 transition hover:border-foreground/25 hover:bg-foreground/[0.06]"
     >
+      <span className="mt-0.5 text-[10px] font-medium tracking-[0.2em] text-muted-foreground">{index}</span>
       <div className="flex-1">
         <p className="text-[15px] font-semibold tracking-tight">{title}</p>
-        <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground line-clamp-2">{description}</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
       </div>
-      <span aria-hidden className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-background transition group-hover:translate-x-0.5">→</span>
+      <span aria-hidden className="mt-1 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground">→</span>
     </Link>
   );
 }
