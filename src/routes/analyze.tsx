@@ -520,6 +520,17 @@ function VideoResultView({
     };
   }, []);
 
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Haptic vibration when a critical mistake is detected.
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const hasBad = analysis.events.some((e) => e.type === "bad");
+    if (hasBad && "vibrate" in navigator) {
+      try { navigator.vibrate?.([12, 40, 12]); } catch { /* noop */ }
+    }
+  }, [analysis.events]);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
