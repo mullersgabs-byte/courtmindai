@@ -559,27 +559,33 @@ function VideoResultView({
   const progress = duration ? t / duration : 0;
 
   return (
-    <div className="animate-float-up">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Análise concluída</p>
-          <h1 className="mt-3 text-balance text-[clamp(2rem,5vw,3.4rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-            Sua técnica, <span className="font-serif italic font-normal text-court-gradient">decodificada.</span>
-          </h1>
-          {analysis.verdict && (
-            <p className="mt-3 max-w-xl text-[15px] text-muted-foreground">{analysis.verdict}</p>
-          )}
-        </div>
-        <button
-          onClick={onReset}
-          className="inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[12px] text-muted-foreground transition hover:text-foreground hover:border-court/40"
-        >
-          Nova análise
-        </button>
-      </div>
+    <div className="animate-float-up space-y-6">
+      <ScanResultHero
+        score={analysis.overallScore}
+        verdict={analysis.verdict}
+        events={analysis.events}
+        duration={duration || _duration || 1}
+        onPointClick={seekToEvent}
+        onReset={onReset}
+      />
 
-      {/* Video player */}
-      {src && (
+      <button
+        onClick={() => setShowDetails((s) => !s)}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 py-3.5 text-[14px] font-medium text-background transition active:scale-[0.98]"
+      >
+        {showDetails ? "Ocultar detalhes" : "Ver detalhes"}
+        <span aria-hidden>{showDetails ? "↑" : "→"}</span>
+      </button>
+
+      {!showDetails && analysis.events.length > 0 && (
+        <p className="text-center text-[12px] text-muted-foreground">
+          Toque nos pontos do gráfico para revisar cada momento.
+        </p>
+      )}
+
+      {showDetails && (
+        <div className="animate-fade-in space-y-6">
+          {src && (
         <div className="relative mt-10 overflow-hidden rounded-3xl border hairline bg-card">
           <div className="relative aspect-video bg-black">
             <video
@@ -638,9 +644,7 @@ function VideoResultView({
         </div>
       )}
 
-      <OverallScore score={analysis.overallScore} verdict={analysis.verdict} />
-
-      <FeedbackGrid
+          <FeedbackGrid
         positives={analysis.positives}
         mistakes={analysis.mistakes}
         improvements={analysis.improvements}
@@ -648,20 +652,20 @@ function VideoResultView({
       />
 
       {analysis.events.length > 0 && (
-        <section className="mt-14">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-court">Linha do tempo</p>
-          <h2 className="mt-3 text-[clamp(1.4rem,2.6vw,2rem)] font-medium tracking-tight">
-            Momentos detectados pela IA
+        <section>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Linha do tempo</p>
+          <h2 className="mt-2 text-[20px] font-semibold tracking-tight">
+            Momentos detectados
           </h2>
-          <div className="mt-6 space-y-3">
+          <div className="mt-4 space-y-3">
             {analysis.events.map((ev, i) => {
               const tn = toneOf(ev.type);
               return (
                 <button
                   key={i}
                   onClick={() => seekToEvent(i)}
-                  className={`block w-full rounded-2xl border bg-card p-5 text-left transition ${
-                    activeEventIdx === i ? `${tn.border}` : "hairline hover:border-court/40"
+                  className={`block w-full rounded-2xl border bg-card p-5 text-left transition active:scale-[0.99] ${
+                    activeEventIdx === i ? `${tn.border}` : "hairline hover:border-foreground/20"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -687,37 +691,41 @@ function VideoResultView({
           </div>
         </section>
       )}
+        </div>
+      )}
     </div>
   );
 }
 
 function TextResultView({ analysis, onReset }: { analysis: TextWorkoutAnalysis; onReset: () => void }) {
+  const [showDetails, setShowDetails] = useState(false);
   return (
-    <div className="animate-float-up">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Análise concluída</p>
-          <h1 className="mt-3 text-balance text-[clamp(2rem,5vw,3.4rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-            Seu treino, <span className="font-serif italic font-normal text-court-gradient">avaliado.</span>
-          </h1>
-          {analysis.verdict && (
-            <p className="mt-3 max-w-xl text-[15px] text-muted-foreground">{analysis.verdict}</p>
-          )}
-        </div>
-        <button
-          onClick={onReset}
-          className="inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[12px] text-muted-foreground hover:text-foreground"
-        >
-          Nova análise
-        </button>
-      </div>
-      <OverallScore score={analysis.overallScore} verdict={analysis.verdict} />
-      <FeedbackGrid
-        positives={analysis.positives}
-        mistakes={analysis.mistakes}
-        improvements={analysis.improvements}
-        steps={analysis.steps}
+    <div className="animate-float-up space-y-6">
+      <ScanResultHero
+        score={analysis.overallScore}
+        verdict={analysis.verdict}
+        events={[]}
+        duration={1}
+        onPointClick={() => {}}
+        onReset={onReset}
       />
+      <button
+        onClick={() => setShowDetails((s) => !s)}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 py-3.5 text-[14px] font-medium text-background transition active:scale-[0.98]"
+      >
+        {showDetails ? "Ocultar detalhes" : "Ver detalhes"}
+        <span aria-hidden>{showDetails ? "↑" : "→"}</span>
+      </button>
+      {showDetails && (
+        <div className="animate-fade-in">
+          <FeedbackGrid
+            positives={analysis.positives}
+            mistakes={analysis.mistakes}
+            improvements={analysis.improvements}
+            steps={analysis.steps}
+          />
+        </div>
+      )}
     </div>
   );
 }
