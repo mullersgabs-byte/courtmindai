@@ -241,9 +241,18 @@ function TrainingPage() {
           <section className="rounded-3xl border bg-card p-6">
             <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.permission.title")}</p>
             <p className="mt-3 text-[15px] leading-relaxed">{t("training.permission.body")}</p>
+            <ul className="mt-4 space-y-2 text-[13px] text-muted-foreground">
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point1")}</li>
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point2")}</li>
+              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point3")}</li>
+            </ul>
             <button onClick={askPermission}
               className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
               {t("training.permission.allow")}
+            </button>
+            <button onClick={() => setPhase("intro")}
+              className="mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[13px] font-medium text-muted-foreground hover:text-foreground">
+              {t("common.cancel")}
             </button>
             {permission === "denied" && (
               <p className="mt-3 text-[13px] text-destructive">{t("training.permission.denied")}</p>
@@ -311,6 +320,11 @@ function TrainingPage() {
             {result.positives.length > 0 && <FeedbackList title={t("training.feedback.positives")} items={result.positives} />}
             {result.mistakes.length > 0 && <FeedbackList title={t("training.feedback.fix")} items={result.mistakes} />}
             {result.steps.length > 0 && <FeedbackList title={t("training.feedback.steps")} items={result.steps} />}
+
+            <Link to="/feedback"
+              className="inline-flex w-full items-center justify-center rounded-full border bg-card px-6 py-3.5 text-[15px] font-medium hover:bg-foreground/5">
+              {t("training.feedback.details")}
+            </Link>
 
             {/* Suggested program after analysis */}
             {program && (
