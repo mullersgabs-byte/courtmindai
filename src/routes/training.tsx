@@ -56,8 +56,7 @@ function TrainingPage() {
     let cancelled = false;
     (async () => {
       try {
-        // @ts-expect-error - navigator.permissions.query camera not in TS lib by default
-        const status = await navigator.permissions?.query?.({ name: "camera" });
+        const status = await (navigator.permissions as any)?.query?.({ name: "camera" });
         if (!cancelled && status) {
           setPermission(status.state as PermState);
           status.onchange = () => setPermission(status.state as PermState);
