@@ -370,17 +370,7 @@ const dictionaries: Record<Lang, Dict> = {
     "analyze.event.bad": "Mistake",
     "analyze.event.warn": "Adjust",
     "analyze.event.good": "Good",
-
-    "sport.tennis": "Tennis",
-    "sport.padel": "Padel",
-    "sport.football": "Football",
-    "sport.basketball": "Basketball",
-    "sport.volleyball": "Volleyball",
-    "sport.running": "Running",
     "sport.gym": "Gym / Strength",
-    "sport.crossfit": "CrossFit",
-    "sport.boxing": "Boxing / Combat",
-    "sport.yoga": "Yoga / Mobility",
     "sport.general": "Other / General",
   },
   pt: {
