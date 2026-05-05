@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -471,7 +471,7 @@ function ErrorView({
 function BlockedView({ message, onReset }: { message: string; onReset: () => void }) {
   return (
     <div className="mx-auto max-w-xl py-16 text-center animate-fade-in">
-      <span className="grid h-14 w-14 mx-auto place-items-center rounded-full bg-warn/10 text-warn">⚠</span>
+      <span className="grid h-14 w-14 mx-auto place-items-center rounded-full bg-warn/10 text-warn">!</span>
       <h2 className="mt-6 text-2xl font-medium tracking-tight">Conteúdo não aceito</h2>
       <p className="mt-3 text-[14px] text-muted-foreground">{message}</p>
       <button
