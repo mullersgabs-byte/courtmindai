@@ -16,11 +16,11 @@ function applyClass(resolved: Resolved) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("dark");
+  const [mode, setModeState] = useState<ThemeMode>("system");
   const [resolved, setResolved] = useState<Resolved>("dark");
 
   useEffect(() => {
-    const stored = (typeof window !== "undefined" && (localStorage.getItem(KEY) as ThemeMode | null)) || "dark";
+    const stored = (typeof window !== "undefined" && (localStorage.getItem(KEY) as ThemeMode | null)) || "system";
     setModeState(stored);
   }, []);
 
