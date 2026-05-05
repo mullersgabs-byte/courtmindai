@@ -457,14 +457,29 @@ function ExerciseList({
   );
 }
 
-function FeedbackList({ title, items }: { title: string; items: string[] }) {
+function FeedbackList({ title, items, kind = "step" }: { title: string; items: string[]; kind?: "good" | "warn" | "step" }) {
+  const Icon = kind === "good" ? CheckCircle2 : kind === "warn" ? AlertTriangle : ListChecks;
   return (
     <section>
-      <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-      <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
-        {items.map((it, i) => <li key={i} className="px-4 py-3 text-[14px]">{it}</li>)}
+      <p className="px-1 pb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{title}</p>
+      <ul className="overflow-hidden rounded-2xl border border-foreground/10 surface-1 divide-y divide-foreground/10">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-3 px-4 py-3 text-[14px]">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-foreground/70" />
+            <span>{it}</span>
+          </li>
+        ))}
       </ul>
     </section>
+  );
+}
+
+function PermPoint({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full surface-2 text-foreground/80">{icon}</span>
+      <span className="pt-1 text-muted-foreground">{children}</span>
+    </li>
   );
 }
 
