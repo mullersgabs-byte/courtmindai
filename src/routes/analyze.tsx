@@ -405,16 +405,6 @@ function InputView({
   );
 }
 
-function Step({ n, title, detail }: { n: string; title: string; detail: string }) {
-  return (
-    <li className="bg-background p-5">
-      <p className="font-serif text-2xl tracking-tight text-muted-foreground">{n}</p>
-      <p className="mt-3 text-[14px] font-medium tracking-tight">{title}</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{detail}</p>
-    </li>
-  );
-}
-
 /* ============== PROGRESS ============== */
 function ProgressView({ progress, status }: { progress: number; status: string }) {
   return (
