@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera, Lock, EyeOff, Play, Square, ArrowRight, CheckCircle2, AlertTriangle, ListChecks } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { getProfile } from "@/lib/profile";
 import { TabBar } from "@/components/TabBar";
+import { ProgressRing } from "@/components/ui-app/ProgressRing";
 import { analyzeFromFrames } from "@/server/analyze.functions";
 import {
   exercisesForSport,
@@ -179,9 +182,11 @@ function TrainingPage() {
         steps: res.steps,
       });
       setPhase("result");
+      toast.success(`${t("training.score")}: ${Math.round(res.overallScore)}/100`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not analyze.");
       setPhase("error");
+      toast.error(t("training.feedback.title"));
     }
   };
 
@@ -194,6 +199,7 @@ function TrainingPage() {
   const onEnroll = () => {
     if (!program) return;
     setEnrollment(enroll(program.id));
+    toast.success(t("training.program.enrolled"));
   };
 
   const sportLabel = t(`sport.${sport.toLowerCase?.() || sport}`) || sport;
@@ -238,24 +244,27 @@ function TrainingPage() {
         )}
 
         {phase === "permission" && (
-          <section className="rounded-3xl border bg-card p-6">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.permission.title")}</p>
-            <p className="mt-3 text-[15px] leading-relaxed">{t("training.permission.body")}</p>
-            <ul className="mt-4 space-y-2 text-[13px] text-muted-foreground">
-              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point1")}</li>
-              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point2")}</li>
-              <li className="flex items-start gap-2"><span className="mt-1.5 h-1 w-1 rounded-full bg-foreground/60" />{t("training.permission.point3")}</li>
+          <section className="rounded-3xl border border-foreground/10 surface-1 p-6">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-foreground text-background">
+              <Camera className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-center text-[20px] font-semibold tracking-tight">{t("training.permission.title")}</h2>
+            <p className="mt-2 text-center text-[14px] leading-relaxed text-muted-foreground">{t("training.permission.body")}</p>
+            <ul className="mt-5 space-y-3 text-[13px]">
+              <PermPoint icon={<Lock className="h-4 w-4" />}>{t("training.permission.point1")}</PermPoint>
+              <PermPoint icon={<Camera className="h-4 w-4" />}>{t("training.permission.point2")}</PermPoint>
+              <PermPoint icon={<EyeOff className="h-4 w-4" />}>{t("training.permission.point3")}</PermPoint>
             </ul>
             <button onClick={askPermission}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              className="press tap mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-semibold text-background">
               {t("training.permission.allow")}
             </button>
             <button onClick={() => setPhase("intro")}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[13px] font-medium text-muted-foreground hover:text-foreground">
+              className="tap mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[13px] font-medium text-muted-foreground hover:text-foreground">
               {t("common.cancel")}
             </button>
             {permission === "denied" && (
-              <p className="mt-3 text-[13px] text-destructive">{t("training.permission.denied")}</p>
+              <p className="mt-3 text-center text-[12px] text-destructive">{t("training.permission.denied")}</p>
             )}
           </section>
         )}
@@ -282,48 +291,53 @@ function TrainingPage() {
 
         {phase === "recording" && (
           <>
-            <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
+            <div className="relative overflow-hidden rounded-[28px] border border-foreground/10 bg-black aspect-[3/4]">
               <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
-            </div>
-            <div className="flex items-center justify-center gap-2 text-[13px] text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-              {t("training.recording")}
+              <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-white backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> REC
+              </div>
             </div>
             <button onClick={stopRecording}
-              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.stop")}
+              className="press tap inline-flex w-full items-center justify-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-[15px] font-semibold text-destructive-foreground">
+              <Square className="h-4 w-4" /> {t("training.stop")}
             </button>
           </>
         )}
 
         {phase === "analyzing" && (
-          <div className="rounded-3xl border bg-card p-8 text-center">
-            <p className="text-[13px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.analyzing")}</p>
-            <div className="mx-auto mt-6 h-1 w-full max-w-[240px] overflow-hidden rounded-full bg-foreground/10">
-              <div className="h-full bg-foreground transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
-            </div>
+          <div className="rounded-3xl border border-foreground/10 surface-1 p-8 text-center">
+            <ProgressRing value={progress} size={120} stroke={8} className="mx-auto text-foreground">
+              <p className="num text-[22px] font-semibold tracking-tight">{Math.round(progress * 100)}<span className="text-[12px] text-muted-foreground">%</span></p>
+            </ProgressRing>
+            <p className="mt-5 text-[14px] font-medium">{t("training.analyzing")}</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">15–60s</p>
           </div>
         )}
 
         {phase === "result" && result && (
           <>
             {previewUrl && (
-              <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
+              <div className="overflow-hidden rounded-[28px] border border-foreground/10 bg-black aspect-[3/4]">
                 <video src={previewUrl} controls playsInline className="h-full w-full object-cover" />
               </div>
             )}
-            <section className="rounded-3xl border bg-card p-6 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.score")}</p>
-              <p className="mt-2 text-[56px] font-semibold leading-none tracking-[-0.03em]">{Math.round(result.overallScore)}</p>
-              <p className="mt-3 text-[14px] text-muted-foreground">{result.verdict}</p>
+            <section className="rounded-[28px] border border-foreground/10 surface-1 p-6 text-center">
+              <ProgressRing value={result.overallScore / 100} size={140} stroke={10} className="mx-auto text-foreground">
+                <div>
+                  <p className="num text-[44px] font-semibold leading-none tracking-[-0.03em]">{Math.round(result.overallScore)}</p>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">/100</p>
+                </div>
+              </ProgressRing>
+              <p className="mt-4 text-[14px] text-muted-foreground text-balance">{result.verdict}</p>
             </section>
-            {result.positives.length > 0 && <FeedbackList title={t("training.feedback.positives")} items={result.positives} />}
-            {result.mistakes.length > 0 && <FeedbackList title={t("training.feedback.fix")} items={result.mistakes} />}
-            {result.steps.length > 0 && <FeedbackList title={t("training.feedback.steps")} items={result.steps} />}
+            {result.positives.length > 0 && <FeedbackList kind="good" title={t("training.feedback.positives")} items={result.positives} />}
+            {result.mistakes.length > 0 && <FeedbackList kind="warn" title={t("training.feedback.fix")} items={result.mistakes} />}
+            {result.steps.length > 0 && <FeedbackList kind="step" title={t("training.feedback.steps")} items={result.steps} />}
 
             <Link to="/feedback"
-              className="inline-flex w-full items-center justify-center rounded-full border bg-card px-6 py-3.5 text-[15px] font-medium hover:bg-foreground/5">
-              {t("training.feedback.details")}
+              className="press tap inline-flex w-full items-center justify-between rounded-full bg-foreground px-6 py-3.5 text-[15px] font-semibold text-background">
+              <span>{t("training.feedback.details")}</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
 
             {/* Suggested program after analysis */}
