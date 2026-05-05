@@ -10,6 +10,7 @@ import {
 } from "@/server/analyze.functions";
 import { saveLastAnalysis } from "@/lib/sessionStore";
 import { useT } from "@/lib/i18n";
+import { TabBar } from "@/components/TabBar";
 
 export const Route = createFileRoute("/analyze")({
   head: () => ({
@@ -201,23 +202,15 @@ function AnalyzePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased bg-radial-court">
-      <header className="sticky top-0 z-40 glass border-b hairline">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-          <Link
-            to="/home"
-            className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            ← Home
-          </Link>
-          <p className="text-[12px] uppercase tracking-[0.24em] text-muted-foreground">
-            Análise
-          </p>
-          <div className="w-16" />
-        </div>
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      <header className="px-5 pt-12 pb-4">
+        <h1 className="text-[28px] font-semibold tracking-[-0.02em]">Análise</h1>
+        <p className="mt-1 text-[14px] text-muted-foreground">
+          Envie um vídeo ou descreva seu treino.
+        </p>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-10 sm:px-8 sm:pt-16">
+      <main className="mx-auto max-w-[480px] px-5 space-y-6">
         {phase === "input" && (
           <InputView
             mode={mode}
@@ -252,6 +245,7 @@ function AnalyzePage() {
           <TextResultView analysis={textAnalysis} onReset={reset} />
         )}
       </main>
+      <TabBar />
     </div>
   );
 }
@@ -279,43 +273,34 @@ function InputView({
   const [drag, setDrag] = useState(false);
 
   return (
-    <div className="animate-float-up">
-      <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Etapa 01</p>
-      <h1 className="mt-5 text-balance text-[clamp(2.2rem,6vw,4rem)] font-medium leading-[0.98] tracking-[-0.04em]">
-        Envie seu <span className="font-serif italic font-normal text-court-gradient">treino.</span>
-      </h1>
-      <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-        Mande um vídeo curto ou descreva sua sessão. A IA observa quadro a quadro e devolve pontos
-        fortes, erros e como corrigir.
-      </p>
-
+    <div className="space-y-6">
       {/* Mode toggle */}
-      <div className="mt-10 inline-flex rounded-full border hairline p-1">
+      <div className="grid w-full grid-cols-2 rounded-full border bg-card p-1">
         <button
           onClick={() => setMode("video")}
-          className={`rounded-full px-5 py-2 text-[13px] transition ${
-            mode === "video" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+          className={`rounded-full px-4 py-2 text-[13px] font-medium transition ${
+            mode === "video" ? "bg-foreground text-background" : "text-muted-foreground"
           }`}
         >
-          🎥 Vídeo
+          Vídeo
         </button>
         <button
           onClick={() => setMode("text")}
-          className={`rounded-full px-5 py-2 text-[13px] transition ${
-            mode === "text" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+          className={`rounded-full px-4 py-2 text-[13px] font-medium transition ${
+            mode === "text" ? "bg-foreground text-background" : "text-muted-foreground"
           }`}
         >
-          ✍️ Texto
+          Texto
         </button>
       </div>
 
-      {/* Sport selector — shared */}
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <label className="text-[12px] uppercase tracking-[0.2em] text-muted-foreground">Esporte</label>
+      {/* Sport selector */}
+      <div className="rounded-2xl border bg-card p-4">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Esporte</p>
         <select
           value={sport}
           onChange={(e) => setSport(e.target.value)}
-          className="rounded-full border hairline bg-card px-4 py-2 text-[13px]"
+          className="mt-2 w-full rounded-xl border bg-background px-3 py-2 text-[14px] outline-none"
         >
           <option value="tennis">Tênis</option>
           <option value="padel">Padel</option>
@@ -356,74 +341,66 @@ function InputView({
               const f = e.dataTransfer.files?.[0];
               if (f) onPickVideo(f);
             }}
-            className={`group relative mt-8 block w-full overflow-hidden rounded-3xl border-2 border-dashed bg-card p-10 text-left transition sm:p-14 ${
-              drag
-                ? "border-foreground bg-foreground/5"
-                : "border-foreground/25 hover:border-foreground/60 hover:bg-foreground/[0.03]"
+            className={`block w-full overflow-hidden rounded-3xl border bg-card p-8 text-left transition ${
+              drag ? "border-foreground bg-foreground/5" : "hover:bg-foreground/[0.03]"
             }`}
           >
-            <div className="relative flex flex-col items-center justify-center gap-5 py-6 text-center">
-              <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-foreground/30 font-serif text-3xl leading-none">
-                ↑
-              </span>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                  Solte seu vídeo aqui
-                </p>
-                <p className="mt-2 text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-tight tracking-tight">
-                  Clique para escolher ou arraste um arquivo
-                </p>
-                <p className="mt-2 text-[13px] text-muted-foreground">
-                  Qualquer formato (MP4, MOV, AVI, WebM…) · até 500 MB · 10–60 s é o ideal
-                </p>
-              </div>
-              <span className="mt-2 inline-flex items-center rounded-full bg-foreground px-5 py-2.5 text-[13px] font-medium text-background transition group-hover:opacity-90">
-                Escolher vídeo
-              </span>
+            <div className="flex flex-col items-center justify-center gap-3 py-2 text-center">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                Enviar vídeo
+              </p>
+              <p className="text-[17px] font-semibold tracking-tight">
+                Toque para escolher um arquivo
+              </p>
+              <p className="text-[12px] text-muted-foreground">
+                MP4, MOV, WebM · até 500 MB · 10–60 s
+              </p>
             </div>
           </button>
 
-          <div className="mt-6">
-            <label className="text-[12px] uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
               Notas (opcional)
-            </label>
+            </p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder='ex.: "Treinando saque slice, foco em rotação de quadril."'
+              placeholder='ex.: saque slice, foco em rotação de quadril.'
               rows={2}
-              className="mt-2 w-full rounded-2xl border hairline bg-card p-4 text-[14px] outline-none focus:border-court/50"
+              className="mt-2 w-full rounded-xl border bg-background p-3 text-[14px] outline-none"
             />
           </div>
+
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90"
+          >
+            Escolher vídeo
+          </button>
         </>
       ) : (
-        <div className="mt-8 rounded-3xl border hairline bg-card p-6 sm:p-8">
-          <label className="text-[12px] uppercase tracking-[0.2em] text-muted-foreground">
-            Descreva seu treino
-          </label>
-          <textarea
-            value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
-            placeholder='ex.: "Fiz 4x10 agachamento livre com 80kg, supino 3x8 com 60kg, senti o joelho cair pra dentro."'
-            rows={6}
-            className="mt-3 w-full rounded-2xl border hairline bg-background p-4 text-[14px] outline-none focus:border-court/50"
-          />
+        <>
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Descreva seu treino
+            </p>
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder='ex.: 4x10 agachamento 80kg, supino 3x8 60kg, senti o joelho cair pra dentro.'
+              rows={6}
+              className="mt-2 w-full rounded-xl border bg-background p-3 text-[14px] outline-none"
+            />
+          </div>
           <button
             onClick={onSubmitText}
             disabled={textInput.trim().length < 10}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-court px-6 py-3 text-[13px] font-medium text-ink glow-court disabled:opacity-40"
+            className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90 disabled:opacity-40"
           >
             Analisar treino
           </button>
-        </div>
+        </>
       )}
-
-      {/* How it works */}
-      <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border hairline bg-foreground/10 sm:grid-cols-3">
-        <Step n="01" title="Envie" detail="Vídeo de qualquer tamanho ou texto descritivo." />
-        <Step n="02" title="IA observa" detail="Quadros são lidos e moderados antes da análise." />
-        <Step n="03" title="Receba o feedback" detail="Acertos, erros e passos para melhorar." />
-      </ol>
     </div>
   );
 }
