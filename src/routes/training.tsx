@@ -193,16 +193,6 @@ function TrainingPage() {
       <main className="mx-auto max-w-[480px] px-5 space-y-6">
         {phase === "intro" && (
           <>
-            {/* Suggested program card */}
-            {program && (
-              <ProgramCard
-                program={program}
-                enrolled={enrollment?.programId === program.id}
-                onEnroll={onEnroll}
-                t={t}
-              />
-            )}
-
             <ExerciseList
               title={t("training.exercises.today")}
               exercises={exercises}
@@ -211,9 +201,21 @@ function TrainingPage() {
               t={t}
             />
 
+            {enrollment && program && enrollment.programId === program.id && (
+              <section className="rounded-3xl border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {t("training.program.continue")}
+                </p>
+                <p className="mt-2 text-[15px] font-medium">{t(program.titleKey)}</p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  {t("training.program.week").replace("{n}", String(enrollment.currentWeek))} · {program.weeks} {t("program.weeks_label").toLowerCase()}
+                </p>
+              </section>
+            )}
+
             <button onClick={goToReady}
               className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.start_session")}
+              {t("training.start_analysis")}
             </button>
           </>
         )}
@@ -300,7 +302,8 @@ function TrainingPage() {
                 enrolled={enrollment?.programId === program.id}
                 onEnroll={onEnroll}
                 t={t}
-                heading={t("training.program.suggested")}
+                heading={t("training.program.suggested_after")}
+                highlight
               />
             )}
 
