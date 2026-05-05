@@ -1,9 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Home, Dumbbell, Sparkles, User } from "lucide-react";
-import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
-type Tab = { to: "/home" | "/training" | "/feedback" | "/profile"; key: string; Icon: ComponentType<{ className?: string }> };
+type Tab = { to: "/home" | "/training" | "/feedback" | "/profile"; key: string; Icon: LucideIcon };
 
 const tabs: Tab[] = [
   { to: "/home", key: "tab.home", Icon: Home },
