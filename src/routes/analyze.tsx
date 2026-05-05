@@ -833,6 +833,208 @@ function OverallScore({ score, verdict }: { score: number; verdict: string }) {
   );
 }
 
+/* ============== SCAN RESULT HERO (Apple "Scanning results" style) ============== */
+function ScanResultHero({
+  score, verdict, events, duration, onPointClick, onReset,
+}: {
+  score: number;
+  verdict: string;
+  events: VideoEvent[];
+  duration: number;
+  onPointClick: (idx: number) => void;
+  onReset: () => void;
+}) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  // Build a smooth curve. Y values: success=0.85, warn=0.55, bad=0.25.
+  const W = 320;
+  const H = 110;
+  const pad = 12;
+  const yFor = (t: VideoEvent["type"]) =>
+    t === "good" ? H - pad - (H - 2 * pad) * 0.85
+    : t === "warn" ? H - pad - (H - 2 * pad) * 0.55
+    : H - pad - (H - 2 * pad) * 0.25;
+
+  const safeDur = Math.max(0.001, duration);
+  const sorted = [...events].sort((a, b) => a.time_seconds - b.time_seconds);
+  const pts = sorted.length
+    ? sorted.map((e) => ({
+        x: pad + ((e.time_seconds / safeDur) * (W - 2 * pad)),
+        y: yFor(e.type),
+        ev: e,
+      }))
+    : [
+        { x: pad,           y: H * 0.55, ev: null as unknown as VideoEvent },
+        { x: W * 0.35,      y: H * 0.40, ev: null as unknown as VideoEvent },
+        { x: W * 0.65,      y: H * 0.50, ev: null as unknown as VideoEvent },
+        { x: W - pad,       y: H * 0.35, ev: null as unknown as VideoEvent },
+      ];
+
+  // Build smooth path with cubic bezier between points.
+  const path = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`;
+    const prev = pts[i - 1];
+    const cx = (prev.x + p.x) / 2;
+    return `${acc} C ${cx} ${prev.y}, ${cx} ${p.y}, ${p.x} ${p.y}`;
+  }, "");
+
+  const peak = events.find((e) => e.type === "bad");
+  const stable = events.find((e) => e.type === "good");
+  const dip = events.find((e) => e.type === "warn");
+
+  const colorFor = (t: VideoEvent["type"]) =>
+    t === "bad" ? "var(--danger)" : t === "warn" ? "var(--warn)" : "var(--success)";
+  const sizeFor = (t: VideoEvent["type"]) =>
+    t === "bad" ? 6 : t === "warn" ? 5 : 4.5;
+
+  return (
+    <section className="rounded-3xl border hairline bg-card p-6">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+          Resultado da análise
+        </p>
+        <button
+          onClick={onReset}
+          className="rounded-full border hairline px-3 py-1.5 text-[11px] text-muted-foreground transition hover:text-foreground"
+        >
+          Nova análise
+        </button>
+      </div>
+
+      <div className="mt-5 flex items-baseline gap-2">
+        <span className="text-[64px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+          {score.toFixed(1)}
+        </span>
+        <span className="text-[18px] text-muted-foreground">/ 10</span>
+      </div>
+      {verdict && (
+        <p className="mt-2 text-[14px] leading-snug text-muted-foreground">
+          {verdict}
+        </p>
+      )}
+
+      {/* Line chart */}
+      <div className="mt-6 overflow-hidden rounded-2xl bg-background/60 p-3">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="block h-[140px] w-full"
+          preserveAspectRatio="none"
+        >
+          {/* gridlines */}
+          {[0.25, 0.5, 0.75].map((g) => (
+            <line
+              key={g}
+              x1={pad}
+              x2={W - pad}
+              y1={H * g}
+              y2={H * g}
+              stroke="currentColor"
+              strokeWidth={0.5}
+              className="text-foreground/8"
+              strokeDasharray="2 4"
+            />
+          ))}
+          {/* line */}
+          <path
+            d={path}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            className="text-foreground"
+            style={{
+              strokeDasharray: 800,
+              strokeDashoffset: 800,
+              animation: "score-fill 1.2s cubic-bezier(0.22,1,0.36,1) forwards",
+            }}
+          />
+          {/* points */}
+          {pts.map((p, i) => {
+            if (!p.ev) return null;
+            const t = p.ev.type;
+            const r = sizeFor(t);
+            const c = colorFor(t);
+            const active = hoverIdx === i;
+            return (
+              <g key={i}>
+                {/* glow */}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={active ? r + 8 : r + 4}
+                  fill={c}
+                  opacity={t === "bad" ? 0.28 : t === "warn" ? 0.18 : 0.14}
+                  style={{ transition: "all 220ms ease" }}
+                />
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={active ? r + 2 : r}
+                  fill={c}
+                  opacity={t === "warn" ? 0.95 : 1}
+                  style={{ transition: "all 220ms ease", cursor: "pointer" }}
+                  onMouseEnter={() => setHoverIdx(i)}
+                  onMouseLeave={() => setHoverIdx(null)}
+                  onClick={() => onPointClick(events.indexOf(p.ev))}
+                />
+                {active && (
+                  <g>
+                    <rect
+                      x={Math.max(2, Math.min(W - 92, p.x - 45))}
+                      y={Math.max(2, p.y - 28)}
+                      width={90}
+                      height={20}
+                      rx={6}
+                      fill="var(--foreground)"
+                    />
+                    <text
+                      x={Math.max(2, Math.min(W - 92, p.x - 45)) + 45}
+                      y={Math.max(2, p.y - 28) + 13}
+                      textAnchor="middle"
+                      fontSize="9"
+                      fontWeight="600"
+                      fill="var(--background)"
+                    >
+                      {p.ev.title.slice(0, 18)}
+                    </text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Insights */}
+      <ul className="mt-5 space-y-2.5 text-[13px]">
+        {peak && (
+          <li className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-danger" />
+            <span><span className="font-medium">Pico crítico</span> — {peak.title.toLowerCase()}</span>
+          </li>
+        )}
+        {stable && (
+          <li className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-success" />
+            <span><span className="font-medium">Execução estável</span> — {stable.title.toLowerCase()}</span>
+          </li>
+        )}
+        {dip && (
+          <li className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warn" />
+            <span><span className="font-medium">Ajuste leve</span> — {dip.title.toLowerCase()}</span>
+          </li>
+        )}
+        {!peak && !stable && !dip && (
+          <li className="text-muted-foreground">
+            Nenhum evento crítico detectado nesta análise.
+          </li>
+        )}
+      </ul>
+    </section>
+  );
+}
+
 /* ---------- frame extraction (browser) ---------- */
 async function extractFrames(
   src: string,
