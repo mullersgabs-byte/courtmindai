@@ -142,11 +142,28 @@ function TrainingPage() {
         },
       } as any);
       if (res.status !== "done") throw new Error(res.error || "Analysis failed.");
+      const analysisRecord = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        sport,
+        exerciseId: activeExercise.id,
+        exerciseName: t(activeExercise.nameKey),
+        durationSeconds,
+        overallScore: res.overallScore,
+        verdict: res.verdict,
+        positives: res.positives,
+        mistakes: res.mistakes,
+        improvements: res.improvements,
+        steps: res.steps,
+      };
+      try {
+        localStorage.setItem("courtmind.last_feedback.v1", JSON.stringify(analysisRecord));
+      } catch {}
       try {
         const list = JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]");
         list.unshift({
-          id: crypto.randomUUID(),
-          date: new Date().toISOString(),
+          id: analysisRecord.id,
+          date: analysisRecord.date,
           title: t(activeExercise.nameKey),
           sport,
           durationMinutes: Math.max(1, Math.round(durationSeconds / 60)),
