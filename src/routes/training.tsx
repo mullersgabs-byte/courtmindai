@@ -193,16 +193,6 @@ function TrainingPage() {
       <main className="mx-auto max-w-[480px] px-5 space-y-6">
         {phase === "intro" && (
           <>
-            {/* Suggested program card */}
-            {program && (
-              <ProgramCard
-                program={program}
-                enrolled={enrollment?.programId === program.id}
-                onEnroll={onEnroll}
-                t={t}
-              />
-            )}
-
             <ExerciseList
               title={t("training.exercises.today")}
               exercises={exercises}
@@ -211,9 +201,21 @@ function TrainingPage() {
               t={t}
             />
 
+            {enrollment && program && enrollment.programId === program.id && (
+              <section className="rounded-3xl border bg-card p-4">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {t("training.program.continue")}
+                </p>
+                <p className="mt-2 text-[15px] font-medium">{t(program.titleKey)}</p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  {t("training.program.week").replace("{n}", String(enrollment.currentWeek))} · {program.weeks} {t("program.weeks_label").toLowerCase()}
+                </p>
+              </section>
+            )}
+
             <button onClick={goToReady}
               className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.start_session")}
+              {t("training.start_analysis")}
             </button>
           </>
         )}
@@ -300,7 +302,8 @@ function TrainingPage() {
                 enrolled={enrollment?.programId === program.id}
                 onEnroll={onEnroll}
                 t={t}
-                heading={t("training.program.suggested")}
+                heading={t("training.program.suggested_after")}
+                highlight
               />
             )}
 
@@ -328,21 +331,22 @@ function TrainingPage() {
 }
 
 function ProgramCard({
-  program, enrolled, onEnroll, t, heading,
+  program, enrolled, onEnroll, t, heading, highlight,
 }: {
   program: Program;
   enrolled: boolean;
   onEnroll: () => void;
   t: (k: string) => string;
   heading?: string;
+  highlight?: boolean;
 }) {
   return (
-    <section className="rounded-3xl border bg-card p-5">
+    <section className={`rounded-3xl border p-5 ${highlight ? "bg-foreground text-background" : "bg-card"}`}>
       <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
         {heading || t("training.program.suggested")}
       </p>
       <h2 className="mt-3 text-[20px] font-semibold leading-tight">{t(program.titleKey)}</h2>
-      <p className="mt-1 text-[13px] text-muted-foreground">{t(program.descriptionKey)}</p>
+      <p className={`mt-1 text-[13px] ${highlight ? "opacity-80" : "text-muted-foreground"}`}>{t(program.descriptionKey)}</p>
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
         <Mini label={t("program.weeks_label")} value={String(program.weeks)} />
         <Mini label={t("program.sessions_label")} value={String(program.sessionsPerWeek)} />
@@ -350,9 +354,13 @@ function ProgramCard({
       </div>
       <button onClick={onEnroll} disabled={enrolled}
         className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[14px] font-medium transition ${
-          enrolled ? "border bg-card text-muted-foreground" : "bg-foreground text-background hover:opacity-90"
+          enrolled
+            ? "border bg-card text-muted-foreground"
+            : highlight
+              ? "bg-background text-foreground hover:opacity-90"
+              : "bg-foreground text-background hover:opacity-90"
         }`}>
-        {enrolled ? t("training.program.enrolled") : t("training.program.enroll")}
+        {enrolled ? t("training.program.enrolled") : t("training.program.start")}
       </button>
     </section>
   );
