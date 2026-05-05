@@ -1,16 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { getProfile } from "@/lib/profile";
 import { TabBar } from "@/components/TabBar";
 import { analyzeFromFrames } from "@/server/analyze.functions";
+import {
+  exercisesForSport,
+  recommendedProgram,
+  enroll,
+  getEnrollment,
+  type Exercise,
+  type Program,
+} from "@/lib/programs";
 
 export const Route = createFileRoute("/training")({
   head: () => ({ meta: [{ title: "Training — CourtMind" }] }),
   component: TrainingPage,
 });
 
-type Phase = "idle" | "recording" | "analyzing" | "result" | "error";
+type Phase = "intro" | "permission" | "ready" | "recording" | "analyzing" | "result" | "error";
 type Result = {
   overallScore: number;
   verdict: string;
@@ -20,12 +28,19 @@ type Result = {
   steps: string[];
 };
 
-const WORKOUTS = ["Push-ups", "Squats", "Lunges", "Plank", "Burpees", "Jumping jacks"];
+type PermState = "unknown" | "prompt" | "granted" | "denied";
 
 function TrainingPage() {
   const { t, lang } = useT();
-  const [workout, setWorkout] = useState<string>(WORKOUTS[0]);
-  const [phase, setPhase] = useState<Phase>("idle");
+  const profile = useMemo(() => getProfile(), []);
+  const sport = profile.sport || "tennis";
+  const exercises = useMemo<Exercise[]>(() => exercisesForSport(sport), [sport]);
+  const program = useMemo<Program | undefined>(() => recommendedProgram(sport), [sport]);
+  const [enrollment, setEnrollment] = useState(() => getEnrollment());
+
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [permission, setPermission] = useState<PermState>("unknown");
+  const [activeExercise, setActiveExercise] = useState<Exercise>(exercises[0]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string>("");
   const [result, setResult] = useState<Result | null>(null);
@@ -36,16 +51,52 @@ function TrainingPage() {
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
 
+  // probe permissions on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await (navigator.permissions as any)?.query?.({ name: "camera" });
+        if (!cancelled && status) {
+          setPermission(status.state as PermState);
+          status.onchange = () => setPermission(status.state as PermState);
+        }
+      } catch {
+        /* ignore — we will ask on use */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
+
+  const askPermission = async () => {
+    setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      // we only wanted permission — release immediately
+      stream.getTracks().forEach((tr) => tr.stop());
+      setPermission("granted");
+      setPhase("ready");
+    } catch {
+      setPermission("denied");
+    }
+  };
+
+  const goToReady = async () => {
+    if (permission === "granted") { setPhase("ready"); return; }
+    setPhase("permission");
+  };
 
   const startRecording = async () => {
     setError(""); setResult(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
       streamRef.current = stream;
+      setPermission("granted");
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
@@ -57,7 +108,7 @@ function TrainingPage() {
         const blob = new Blob(chunksRef.current, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
-        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current?.getTracks().forEach((tr) => tr.stop());
         if (videoRef.current) videoRef.current.srcObject = null;
         await analyze(url);
       };
@@ -66,6 +117,7 @@ function TrainingPage() {
       setPhase("recording");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Camera unavailable.");
+      setPermission("denied");
       setPhase("error");
     }
   };
@@ -81,19 +133,24 @@ function TrainingPage() {
     try {
       setProgress(0);
       const { frames, durationSeconds } = await extractFrames(url, 6, setProgress);
-      const profile = getProfile();
       const res = await analyzeFromFrames({
         data: {
           frames, durationSeconds,
-          sport: profile.sport || workout, level: profile.level || "intermediate",
+          sport, level: profile.level || "intermediate",
           language: lang,
+          notes: t(activeExercise.nameKey),
         },
       } as any);
       if (res.status !== "done") throw new Error(res.error || "Analysis failed.");
-      // Save workout entry
       try {
         const list = JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]");
-        list.unshift({ id: crypto.randomUUID(), date: new Date().toISOString(), title: workout, durationMinutes: Math.max(1, Math.round(durationSeconds / 60)) });
+        list.unshift({
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          title: t(activeExercise.nameKey),
+          sport,
+          durationMinutes: Math.max(1, Math.round(durationSeconds / 60)),
+        });
         localStorage.setItem("courtmind.history.v1", JSON.stringify(list));
       } catch {}
       setResult({
@@ -113,32 +170,77 @@ function TrainingPage() {
 
   const reset = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(""); setResult(null); setError(""); setPhase("idle");
+    setPreviewUrl(""); setResult(null); setError("");
+    setPhase(permission === "granted" ? "ready" : "intro");
   };
+
+  const onEnroll = () => {
+    if (!program) return;
+    setEnrollment(enroll(program.id));
+  };
+
+  const sportLabel = t(`sport.${sport.toLowerCase?.() || sport}`) || sport;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
       <header className="px-5 pt-12 pb-4">
         <h1 className="text-[28px] font-semibold tracking-[-0.02em]">{t("training.title")}</h1>
-        <p className="mt-1 text-[14px] text-muted-foreground">{t("training.subtitle")}</p>
+        <p className="mt-1 text-[14px] text-muted-foreground">
+          {t("training.exercises.for").replace("{sport}", sportLabel)}
+        </p>
       </header>
 
       <main className="mx-auto max-w-[480px] px-5 space-y-6">
-        {phase === "idle" && (
+        {phase === "intro" && (
           <>
-            <section>
-              <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.pick")}</p>
-              <div className="overflow-hidden rounded-2xl border bg-card divide-y">
-                {WORKOUTS.map((w) => (
-                  <button key={w} onClick={() => setWorkout(w)}
-                    className={`flex w-full items-center justify-between px-4 py-3 text-left text-[15px] transition hover:bg-foreground/5 ${
-                      workout === w ? "font-medium" : "text-muted-foreground"
-                    }`}>
-                    {w}
-                    {workout === w && <span className="text-[12px] uppercase tracking-wider">·</span>}
-                  </button>
-                ))}
-              </div>
+            {/* Suggested program card */}
+            {program && (
+              <ProgramCard
+                program={program}
+                enrolled={enrollment?.programId === program.id}
+                onEnroll={onEnroll}
+                t={t}
+              />
+            )}
+
+            <ExerciseList
+              title={t("training.exercises.today")}
+              exercises={exercises}
+              active={activeExercise}
+              onPick={setActiveExercise}
+              t={t}
+            />
+
+            <button onClick={goToReady}
+              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              {t("training.start_session")}
+            </button>
+          </>
+        )}
+
+        {phase === "permission" && (
+          <section className="rounded-3xl border bg-card p-6">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.permission.title")}</p>
+            <p className="mt-3 text-[15px] leading-relaxed">{t("training.permission.body")}</p>
+            <button onClick={askPermission}
+              className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
+              {t("training.permission.allow")}
+            </button>
+            {permission === "denied" && (
+              <p className="mt-3 text-[13px] text-destructive">{t("training.permission.denied")}</p>
+            )}
+          </section>
+        )}
+
+        {phase === "ready" && (
+          <>
+            <section className="rounded-3xl border bg-card p-5">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.exercises.today")}</p>
+              <p className="mt-3 text-[20px] font-semibold">{t(activeExercise.nameKey)}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{t(activeExercise.cueKey)}</p>
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                {t("training.seconds").replace("{n}", String(activeExercise.seconds))}
+              </p>
             </section>
 
             <p className="text-center text-[13px] text-muted-foreground">{t("training.tip")}</p>
@@ -150,7 +252,7 @@ function TrainingPage() {
           </>
         )}
 
-        {(phase === "recording") && (
+        {phase === "recording" && (
           <>
             <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
               <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
@@ -190,6 +292,18 @@ function TrainingPage() {
             {result.positives.length > 0 && <FeedbackList title={t("training.feedback.positives")} items={result.positives} />}
             {result.mistakes.length > 0 && <FeedbackList title={t("training.feedback.fix")} items={result.mistakes} />}
             {result.steps.length > 0 && <FeedbackList title={t("training.feedback.steps")} items={result.steps} />}
+
+            {/* Suggested program after analysis */}
+            {program && (
+              <ProgramCard
+                program={program}
+                enrolled={enrollment?.programId === program.id}
+                onEnroll={onEnroll}
+                t={t}
+                heading={t("training.program.suggested")}
+              />
+            )}
+
             <button onClick={reset}
               className="inline-flex w-full items-center justify-center rounded-full border bg-card px-6 py-3.5 text-[15px] font-medium hover:bg-foreground/5">
               {t("training.try_again")}
@@ -210,6 +324,83 @@ function TrainingPage() {
 
       <TabBar />
     </div>
+  );
+}
+
+function ProgramCard({
+  program, enrolled, onEnroll, t, heading,
+}: {
+  program: Program;
+  enrolled: boolean;
+  onEnroll: () => void;
+  t: (k: string) => string;
+  heading?: string;
+}) {
+  return (
+    <section className="rounded-3xl border bg-card p-5">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+        {heading || t("training.program.suggested")}
+      </p>
+      <h2 className="mt-3 text-[20px] font-semibold leading-tight">{t(program.titleKey)}</h2>
+      <p className="mt-1 text-[13px] text-muted-foreground">{t(program.descriptionKey)}</p>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <Mini label={t("program.weeks_label")} value={String(program.weeks)} />
+        <Mini label={t("program.sessions_label")} value={String(program.sessionsPerWeek)} />
+        <Mini label={t("program.level_label")} value={t("program.level.all")} />
+      </div>
+      <button onClick={onEnroll} disabled={enrolled}
+        className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[14px] font-medium transition ${
+          enrolled ? "border bg-card text-muted-foreground" : "bg-foreground text-background hover:opacity-90"
+        }`}>
+        {enrolled ? t("training.program.enrolled") : t("training.program.enroll")}
+      </button>
+    </section>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border bg-background p-3">
+      <p className="text-[15px] font-semibold">{value}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function ExerciseList({
+  title, exercises, active, onPick, t,
+}: {
+  title: string;
+  exercises: Exercise[];
+  active: Exercise;
+  onPick: (e: Exercise) => void;
+  t: (k: string) => string;
+}) {
+  return (
+    <section>
+      <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
+        {exercises.map((ex) => {
+          const isActive = ex.id === active.id;
+          return (
+            <li key={ex.id}>
+              <button onClick={() => onPick(ex)}
+                className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-foreground/5 ${
+                  isActive ? "bg-foreground/5" : ""
+                }`}>
+                <div>
+                  <p className={`text-[15px] ${isActive ? "font-semibold" : "font-medium"}`}>{t(ex.nameKey)}</p>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">{t(ex.cueKey)}</p>
+                </div>
+                <span className="text-[12px] text-muted-foreground">
+                  {t("training.seconds").replace("{n}", String(ex.seconds))}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
