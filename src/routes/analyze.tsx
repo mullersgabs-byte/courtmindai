@@ -520,17 +520,6 @@ function VideoResultView({
     };
   }, []);
 
-  const [showDetails, setShowDetails] = useState(false);
-
-  // Haptic vibration when a critical mistake is detected.
-  useEffect(() => {
-    if (typeof navigator === "undefined") return;
-    const hasBad = analysis.events.some((e) => e.type === "bad");
-    if (hasBad && "vibrate" in navigator) {
-      try { navigator.vibrate?.([12, 40, 12]); } catch { /* noop */ }
-    }
-  }, [analysis.events]);
-
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -559,33 +548,27 @@ function VideoResultView({
   const progress = duration ? t / duration : 0;
 
   return (
-    <div className="animate-float-up space-y-6">
-      <ScanResultHero
-        score={analysis.overallScore}
-        verdict={analysis.verdict}
-        events={analysis.events}
-        duration={duration || _duration || 1}
-        onPointClick={seekToEvent}
-        onReset={onReset}
-      />
+    <div className="animate-float-up">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Análise concluída</p>
+          <h1 className="mt-3 text-balance text-[clamp(2rem,5vw,3.4rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+            Sua técnica, <span className="font-serif italic font-normal text-court-gradient">decodificada.</span>
+          </h1>
+          {analysis.verdict && (
+            <p className="mt-3 max-w-xl text-[15px] text-muted-foreground">{analysis.verdict}</p>
+          )}
+        </div>
+        <button
+          onClick={onReset}
+          className="inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[12px] text-muted-foreground transition hover:text-foreground hover:border-court/40"
+        >
+          Nova análise
+        </button>
+      </div>
 
-      <button
-        onClick={() => setShowDetails((s) => !s)}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 py-3.5 text-[14px] font-medium text-background transition active:scale-[0.98]"
-      >
-        {showDetails ? "Ocultar detalhes" : "Ver detalhes"}
-        <span aria-hidden>{showDetails ? "↑" : "→"}</span>
-      </button>
-
-      {!showDetails && analysis.events.length > 0 && (
-        <p className="text-center text-[12px] text-muted-foreground">
-          Toque nos pontos do gráfico para revisar cada momento.
-        </p>
-      )}
-
-      {showDetails && (
-        <div className="animate-fade-in space-y-6">
-          {src && (
+      {/* Video player */}
+      {src && (
         <div className="relative mt-10 overflow-hidden rounded-3xl border hairline bg-card">
           <div className="relative aspect-video bg-black">
             <video
@@ -644,7 +627,9 @@ function VideoResultView({
         </div>
       )}
 
-          <FeedbackGrid
+      <OverallScore score={analysis.overallScore} verdict={analysis.verdict} />
+
+      <FeedbackGrid
         positives={analysis.positives}
         mistakes={analysis.mistakes}
         improvements={analysis.improvements}
@@ -652,20 +637,20 @@ function VideoResultView({
       />
 
       {analysis.events.length > 0 && (
-        <section>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Linha do tempo</p>
-          <h2 className="mt-2 text-[20px] font-semibold tracking-tight">
-            Momentos detectados
+        <section className="mt-14">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-court">Linha do tempo</p>
+          <h2 className="mt-3 text-[clamp(1.4rem,2.6vw,2rem)] font-medium tracking-tight">
+            Momentos detectados pela IA
           </h2>
-          <div className="mt-4 space-y-3">
+          <div className="mt-6 space-y-3">
             {analysis.events.map((ev, i) => {
               const tn = toneOf(ev.type);
               return (
                 <button
                   key={i}
                   onClick={() => seekToEvent(i)}
-                  className={`block w-full rounded-2xl border bg-card p-5 text-left transition active:scale-[0.99] ${
-                    activeEventIdx === i ? `${tn.border}` : "hairline hover:border-foreground/20"
+                  className={`block w-full rounded-2xl border bg-card p-5 text-left transition ${
+                    activeEventIdx === i ? `${tn.border}` : "hairline hover:border-court/40"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -691,41 +676,37 @@ function VideoResultView({
           </div>
         </section>
       )}
-        </div>
-      )}
     </div>
   );
 }
 
 function TextResultView({ analysis, onReset }: { analysis: TextWorkoutAnalysis; onReset: () => void }) {
-  const [showDetails, setShowDetails] = useState(false);
   return (
-    <div className="animate-float-up space-y-6">
-      <ScanResultHero
-        score={analysis.overallScore}
-        verdict={analysis.verdict}
-        events={[]}
-        duration={1}
-        onPointClick={() => {}}
-        onReset={onReset}
-      />
-      <button
-        onClick={() => setShowDetails((s) => !s)}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 py-3.5 text-[14px] font-medium text-background transition active:scale-[0.98]"
-      >
-        {showDetails ? "Ocultar detalhes" : "Ver detalhes"}
-        <span aria-hidden>{showDetails ? "↑" : "→"}</span>
-      </button>
-      {showDetails && (
-        <div className="animate-fade-in">
-          <FeedbackGrid
-            positives={analysis.positives}
-            mistakes={analysis.mistakes}
-            improvements={analysis.improvements}
-            steps={analysis.steps}
-          />
+    <div className="animate-float-up">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-court">Análise concluída</p>
+          <h1 className="mt-3 text-balance text-[clamp(2rem,5vw,3.4rem)] font-medium leading-[0.98] tracking-[-0.04em]">
+            Seu treino, <span className="font-serif italic font-normal text-court-gradient">avaliado.</span>
+          </h1>
+          {analysis.verdict && (
+            <p className="mt-3 max-w-xl text-[15px] text-muted-foreground">{analysis.verdict}</p>
+          )}
         </div>
-      )}
+        <button
+          onClick={onReset}
+          className="inline-flex items-center gap-2 rounded-full border hairline px-4 py-2 text-[12px] text-muted-foreground hover:text-foreground"
+        >
+          Nova análise
+        </button>
+      </div>
+      <OverallScore score={analysis.overallScore} verdict={analysis.verdict} />
+      <FeedbackGrid
+        positives={analysis.positives}
+        mistakes={analysis.mistakes}
+        improvements={analysis.improvements}
+        steps={analysis.steps}
+      />
     </div>
   );
 }
@@ -829,208 +810,6 @@ function OverallScore({ score, verdict }: { score: number; verdict: string }) {
           <span>0</span><span>5</span><span>10</span>
         </div>
       </div>
-    </section>
-  );
-}
-
-/* ============== SCAN RESULT HERO (Apple "Scanning results" style) ============== */
-function ScanResultHero({
-  score, verdict, events, duration, onPointClick, onReset,
-}: {
-  score: number;
-  verdict: string;
-  events: VideoEvent[];
-  duration: number;
-  onPointClick: (idx: number) => void;
-  onReset: () => void;
-}) {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-
-  // Build a smooth curve. Y values: success=0.85, warn=0.55, bad=0.25.
-  const W = 320;
-  const H = 110;
-  const pad = 12;
-  const yFor = (t: VideoEvent["type"]) =>
-    t === "good" ? H - pad - (H - 2 * pad) * 0.85
-    : t === "warn" ? H - pad - (H - 2 * pad) * 0.55
-    : H - pad - (H - 2 * pad) * 0.25;
-
-  const safeDur = Math.max(0.001, duration);
-  const sorted = [...events].sort((a, b) => a.time_seconds - b.time_seconds);
-  const pts = sorted.length
-    ? sorted.map((e) => ({
-        x: pad + ((e.time_seconds / safeDur) * (W - 2 * pad)),
-        y: yFor(e.type),
-        ev: e,
-      }))
-    : [
-        { x: pad,           y: H * 0.55, ev: null as unknown as VideoEvent },
-        { x: W * 0.35,      y: H * 0.40, ev: null as unknown as VideoEvent },
-        { x: W * 0.65,      y: H * 0.50, ev: null as unknown as VideoEvent },
-        { x: W - pad,       y: H * 0.35, ev: null as unknown as VideoEvent },
-      ];
-
-  // Build smooth path with cubic bezier between points.
-  const path = pts.reduce((acc, p, i) => {
-    if (i === 0) return `M ${p.x} ${p.y}`;
-    const prev = pts[i - 1];
-    const cx = (prev.x + p.x) / 2;
-    return `${acc} C ${cx} ${prev.y}, ${cx} ${p.y}, ${p.x} ${p.y}`;
-  }, "");
-
-  const peak = events.find((e) => e.type === "bad");
-  const stable = events.find((e) => e.type === "good");
-  const dip = events.find((e) => e.type === "warn");
-
-  const colorFor = (t: VideoEvent["type"]) =>
-    t === "bad" ? "var(--danger)" : t === "warn" ? "var(--warn)" : "var(--success)";
-  const sizeFor = (t: VideoEvent["type"]) =>
-    t === "bad" ? 6 : t === "warn" ? 5 : 4.5;
-
-  return (
-    <section className="rounded-3xl border hairline bg-card p-6">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-          Resultado da análise
-        </p>
-        <button
-          onClick={onReset}
-          className="rounded-full border hairline px-3 py-1.5 text-[11px] text-muted-foreground transition hover:text-foreground"
-        >
-          Nova análise
-        </button>
-      </div>
-
-      <div className="mt-5 flex items-baseline gap-2">
-        <span className="text-[64px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
-          {score.toFixed(1)}
-        </span>
-        <span className="text-[18px] text-muted-foreground">/ 10</span>
-      </div>
-      {verdict && (
-        <p className="mt-2 text-[14px] leading-snug text-muted-foreground">
-          {verdict}
-        </p>
-      )}
-
-      {/* Line chart */}
-      <div className="mt-6 overflow-hidden rounded-2xl bg-background/60 p-3">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="block h-[140px] w-full"
-          preserveAspectRatio="none"
-        >
-          {/* gridlines */}
-          {[0.25, 0.5, 0.75].map((g) => (
-            <line
-              key={g}
-              x1={pad}
-              x2={W - pad}
-              y1={H * g}
-              y2={H * g}
-              stroke="currentColor"
-              strokeWidth={0.5}
-              className="text-foreground/8"
-              strokeDasharray="2 4"
-            />
-          ))}
-          {/* line */}
-          <path
-            d={path}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            className="text-foreground"
-            style={{
-              strokeDasharray: 800,
-              strokeDashoffset: 800,
-              animation: "score-fill 1.2s cubic-bezier(0.22,1,0.36,1) forwards",
-            }}
-          />
-          {/* points */}
-          {pts.map((p, i) => {
-            if (!p.ev) return null;
-            const t = p.ev.type;
-            const r = sizeFor(t);
-            const c = colorFor(t);
-            const active = hoverIdx === i;
-            return (
-              <g key={i}>
-                {/* glow */}
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={active ? r + 8 : r + 4}
-                  fill={c}
-                  opacity={t === "bad" ? 0.28 : t === "warn" ? 0.18 : 0.14}
-                  style={{ transition: "all 220ms ease" }}
-                />
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={active ? r + 2 : r}
-                  fill={c}
-                  opacity={t === "warn" ? 0.95 : 1}
-                  style={{ transition: "all 220ms ease", cursor: "pointer" }}
-                  onMouseEnter={() => setHoverIdx(i)}
-                  onMouseLeave={() => setHoverIdx(null)}
-                  onClick={() => onPointClick(events.indexOf(p.ev))}
-                />
-                {active && (
-                  <g>
-                    <rect
-                      x={Math.max(2, Math.min(W - 92, p.x - 45))}
-                      y={Math.max(2, p.y - 28)}
-                      width={90}
-                      height={20}
-                      rx={6}
-                      fill="var(--foreground)"
-                    />
-                    <text
-                      x={Math.max(2, Math.min(W - 92, p.x - 45)) + 45}
-                      y={Math.max(2, p.y - 28) + 13}
-                      textAnchor="middle"
-                      fontSize="9"
-                      fontWeight="600"
-                      fill="var(--background)"
-                    >
-                      {p.ev.title.slice(0, 18)}
-                    </text>
-                  </g>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      {/* Insights */}
-      <ul className="mt-5 space-y-2.5 text-[13px]">
-        {peak && (
-          <li className="flex items-start gap-3">
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-danger" />
-            <span><span className="font-medium">Pico crítico</span> — {peak.title.toLowerCase()}</span>
-          </li>
-        )}
-        {stable && (
-          <li className="flex items-start gap-3">
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-success" />
-            <span><span className="font-medium">Execução estável</span> — {stable.title.toLowerCase()}</span>
-          </li>
-        )}
-        {dip && (
-          <li className="flex items-start gap-3">
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warn" />
-            <span><span className="font-medium">Ajuste leve</span> — {dip.title.toLowerCase()}</span>
-          </li>
-        )}
-        {!peak && !stable && !dip && (
-          <li className="text-muted-foreground">
-            Nenhum evento crítico detectado nesta análise.
-          </li>
-        )}
-      </ul>
     </section>
   );
 }
