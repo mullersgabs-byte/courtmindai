@@ -1,32 +1,37 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useT } from "@/lib/i18n";
+import { Home, Calendar, BarChart3, Settings } from "lucide-react";
 
 const tabs = [
-  { to: "/home", key: "tab.home" },
-  { to: "/training", key: "tab.training" },
-  { to: "/analyze", key: "tab.analyze" },
-  { to: "/profile", key: "tab.profile" },
+  { to: "/", icon: Home, match: (p: string) => p === "/" },
+  { to: "/calendar", icon: Calendar, match: (p: string) => p.startsWith("/calendar") },
+  { to: "/dashboard", icon: BarChart3, match: (p: string) => p.startsWith("/dashboard") },
+  { to: "/profile", icon: Settings, match: (p: string) => p.startsWith("/profile") },
 ] as const;
 
 export function TabBar() {
-  const { t } = useT();
   const { pathname } = useLocation();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[480px] items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
-        {tabs.map((tab) => {
-          const active = pathname === tab.to || (tab.to !== "/home" && pathname.startsWith(tab.to));
+    <nav className="fixed bottom-0 left-0 right-0 z-50">
+      <div
+        className="mx-auto mb-[env(safe-area-inset-bottom)] mt-3 flex max-w-[420px] items-center justify-around rounded-full border border-white/10 bg-[oklch(0.16_0_0)]/95 px-3 py-2 backdrop-blur-xl"
+        style={{ boxShadow: "0 10px 40px oklch(0 0 0 / 0.55)" }}
+      >
+        {tabs.map(({ to, icon: Icon, match }) => {
+          const active = match(pathname);
           return (
-            <Link key={tab.to} to={tab.to}
-              className={`flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium tracking-wide transition ${
-                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}>
-              <span className={`h-1 w-1 rounded-full ${active ? "bg-foreground" : "bg-transparent"}`} />
-              {t(tab.key)}
+            <Link
+              key={to}
+              to={to}
+              className={`grid h-11 w-11 place-items-center rounded-full transition ${
+                active ? "bg-white text-black" : "text-white/55 hover:text-white"
+              }`}
+            >
+              <Icon size={20} strokeWidth={1.75} />
             </Link>
           );
         })}
       </div>
+      <div className="h-3" />
     </nav>
   );
 }
