@@ -16,6 +16,9 @@ import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CoachRouteImport } from './routes/coach'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyzeRouteImport } from './routes/analyze'
 import { Route as IndexRouteImport } from './routes/index'
@@ -55,6 +58,21 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoachRoute = CoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -75,6 +93,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -87,6 +108,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -100,6 +124,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analyze': typeof AnalyzeRoute
   '/auth': typeof AuthRoute
+  '/calendar': typeof CalendarRoute
+  '/coach': typeof CoachRoute
+  '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
@@ -114,6 +141,9 @@ export interface FileRouteTypes {
     | '/'
     | '/analyze'
     | '/auth'
+    | '/calendar'
+    | '/coach'
+    | '/dashboard'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -126,6 +156,9 @@ export interface FileRouteTypes {
     | '/'
     | '/analyze'
     | '/auth'
+    | '/calendar'
+    | '/coach'
+    | '/dashboard'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -138,6 +171,9 @@ export interface FileRouteTypes {
     | '/'
     | '/analyze'
     | '/auth'
+    | '/calendar'
+    | '/coach'
+    | '/dashboard'
     | '/history'
     | '/home'
     | '/onboarding'
@@ -151,6 +187,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyzeRoute: typeof AnalyzeRoute
   AuthRoute: typeof AuthRoute
+  CalendarRoute: typeof CalendarRoute
+  CoachRoute: typeof CoachRoute
+  DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -211,6 +250,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/coach': {
+      id: '/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof CoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -239,6 +299,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyzeRoute: AnalyzeRoute,
   AuthRoute: AuthRoute,
+  CalendarRoute: CalendarRoute,
+  CoachRoute: CoachRoute,
+  DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
@@ -250,12 +313,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
