@@ -1,102 +1,71 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { useT } from "@/lib/i18n";
-import { getProfile, type Profile } from "@/lib/profile";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Heart, MessageCircle, Share2, Sparkles, Bell } from "lucide-react";
 import { TabBar } from "@/components/TabBar";
+import { getProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/home")({
-  head: () => ({ meta: [{ title: "Home — CourtMind" }] }),
+  head: () => ({ meta: [{ title: "Traino" }] }),
   component: HomePage,
 });
 
-type WorkoutEntry = { id: string; date: string; title: string; durationMinutes?: number };
+type Post = {
+  id: string;
+  user: string;
+  initials: string;
+  workout: string;
+  when: string;
+  stats: { duration: string; calories: string; exercises: string; pace: string; aiScore: string };
+  note?: string;
+};
+
+const SEED: Post[] = [
+  {
+    id: "1", user: "Julia M.", initials: "JM", workout: "Strength · Lower body", when: "2h",
+    stats: { duration: "48 min", calories: "412", exercises: "9", pace: "—", aiScore: "92" },
+    note: "Form felt clean today. Knees stayed aligned through every squat set.",
+  },
+  {
+    id: "2", user: "Lucas R.", initials: "LR", workout: "Running · Tempo run", when: "5h",
+    stats: { duration: "36 min", calories: "388", exercises: "—", pace: "4:42 /km", aiScore: "88" },
+    note: "Cadence improved over the last kilometer.",
+  },
+  {
+    id: "3", user: "Maria S.", initials: "MS", workout: "Tennis · Serve session", when: "Yesterday",
+    stats: { duration: "55 min", calories: "326", exercises: "5", pace: "—", aiScore: "84" },
+  },
+];
 
 function HomePage() {
-  const { t } = useT();
-  const [profile, setProfile] = useState<Profile>({});
-  const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
-
-  useEffect(() => {
-    setProfile(getProfile());
-    try { setWorkouts(JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]")); } catch {}
-  }, []);
-
-  const greetingKey = useMemo(() => {
-    const h = new Date().getHours();
-    return h < 12 ? "home.greeting.morning" : h < 18 ? "home.greeting.afternoon" : "home.greeting.evening";
-  }, []);
-
-  const stats = useMemo(() => {
-    const now = Date.now();
-    const weekAgo = now - 7 * 86400_000;
-    const week = workouts.filter((w) => +new Date(w.date) >= weekAgo);
-    const minutes = week.reduce((s, w) => s + (w.durationMinutes || 0), 0);
-    const days = new Set(workouts.map((w) => new Date(w.date).toISOString().slice(0, 10)));
-    let streak = 0; const d = new Date();
-    for (;;) {
-      const k = d.toISOString().slice(0, 10);
-      if (days.has(k)) { streak++; d.setDate(d.getDate() - 1); } else break;
-    }
-    return { sessions: week.length, minutes, streak };
-  }, [workouts]);
-
-  const initial = (profile.name || "?").charAt(0).toUpperCase();
+  const [name, setName] = useState("Athlete");
+  useEffect(() => { const p = getProfile(); if (p.name) setName(p.name.split(" ")[0]); }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      <header className="px-5 pt-12 pb-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-black text-white pb-36">
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-black/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[440px] items-center justify-between px-5 py-4">
           <div>
-            <p className="text-[13px] text-muted-foreground">{t(greetingKey)}</p>
-            <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.02em]">{profile.name || "—"}</h1>
+            <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">Traino</p>
+            <p className="mt-0.5 text-[15px] font-semibold">Hi, {name}</p>
           </div>
-          <Link to="/profile" className="grid h-11 w-11 place-items-center rounded-full bg-foreground text-[14px] font-medium text-background overflow-hidden">
-            {profile.photoDataUrl ? <img src={profile.photoDataUrl} alt="" className="h-full w-full object-cover" /> : initial}
-          </Link>
+          <button aria-label="Notifications" className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/80">
+            <Bell size={15} />
+          </button>
+        </div>
+        <div className="mx-auto flex max-w-[440px] gap-2 px-5 pb-3 text-[13px]">
+          {["Following", "Discover", "Coaches"].map((tab, i) => (
+            <button
+              key={tab}
+              className={`rounded-full px-4 py-1.5 ${i === 0 ? "bg-white text-black" : "border border-white/10 text-white/65"}`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
       </header>
 
-      <main className="mx-auto max-w-[480px] px-5 space-y-6">
-        {/* Today */}
-        <section className="rounded-3xl border bg-card p-6">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.title")}</p>
-          <p className="mt-3 text-[22px] font-medium tracking-tight">{profile.sport || t("home.subtitle")}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">{profile.goal || t("home.subtitle")}</p>
-          <Link to="/training"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background transition hover:opacity-90">
-            {t("home.cta.start")}
-          </Link>
-        </section>
-
-        {/* This week */}
-        <section>
-          <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.section.this_week")}</p>
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label={t("home.stat.sessions")} value={String(stats.sessions)} />
-            <Stat label={t("home.stat.minutes")} value={String(stats.minutes)} />
-            <Stat label={t("home.stat.streak")} value={String(stats.streak)} />
-          </div>
-        </section>
-
-        {/* Activity */}
-        <section>
-          <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("home.section.activity")}</p>
-          {workouts.length === 0 ? (
-            <div className="rounded-2xl border bg-card p-5 text-[14px] text-muted-foreground">—</div>
-          ) : (
-            <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
-              {workouts.slice(0, 5).map((w) => (
-                <li key={w.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-[14px] font-medium">{w.title}</p>
-                    <p className="text-[12px] text-muted-foreground">{new Date(w.date).toLocaleDateString()}</p>
-                  </div>
-                  <p className="text-[13px] text-muted-foreground">{w.durationMinutes ?? "—"} min</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      <main className="mx-auto max-w-[440px] divide-y divide-white/5">
+        {SEED.map((p) => <PostCard key={p.id} post={p} />)}
       </main>
 
       <TabBar />
@@ -104,11 +73,57 @@ function HomePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function PostCard({ post }: { post: Post }) {
+  const [liked, setLiked] = useState(false);
   return (
-    <div className="rounded-2xl border bg-card p-4 text-center">
-      <p className="text-2xl font-medium tracking-tight">{value}</p>
-      <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+    <article className="px-5 py-5">
+      <header className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-[12px] font-semibold tracking-wide text-white">
+          {post.initials}
+        </span>
+        <div className="flex-1">
+          <p className="text-[14px] font-semibold leading-tight">{post.user}</p>
+          <p className="mt-0.5 text-[12px] text-white/45">{post.workout} · {post.when}</p>
+        </div>
+      </header>
+
+      {post.note && <p className="mt-4 text-[14px] leading-relaxed text-white/85">{post.note}</p>}
+
+      <dl className="mt-4 grid grid-cols-5 gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center">
+        <Stat k="Time"     v={post.stats.duration} />
+        <Stat k="Kcal"     v={post.stats.calories} />
+        <Stat k="Sets"     v={post.stats.exercises} />
+        <Stat k="Pace"     v={post.stats.pace} />
+        <Stat k="AI"       v={post.stats.aiScore} highlight />
+      </dl>
+
+      <div className="mt-4 flex items-center gap-5 text-white/65">
+        <Action onClick={() => setLiked((v) => !v)} icon={<Heart size={17} fill={liked ? "currentColor" : "none"} />} label={liked ? "Liked" : "Like"} active={liked} />
+        <Action icon={<MessageCircle size={17} />} label="Comment" />
+        <Action icon={<Share2 size={17} />} label="Share" />
+        <div className="ml-auto">
+          <button className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[12px] font-medium text-white">
+            <Sparkles size={13} /> Analyze
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Stat({ k, v, highlight }: { k: string; v: string; highlight?: boolean }) {
+  return (
+    <div>
+      <p className={`text-[13px] font-semibold ${highlight ? "text-white" : "text-white/90"}`}>{v}</p>
+      <p className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-white/40">{k}</p>
     </div>
+  );
+}
+
+function Action({ icon, label, onClick, active }: { icon: React.ReactNode; label: string; onClick?: () => void; active?: boolean }) {
+  return (
+    <button onClick={onClick} className={`inline-flex items-center gap-1.5 text-[12px] ${active ? "text-white" : "text-white/65"}`}>
+      {icon}<span>{label}</span>
+    </button>
   );
 }

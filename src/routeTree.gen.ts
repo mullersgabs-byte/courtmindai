@@ -14,8 +14,11 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as EventsRouteImport } from './routes/events'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as CalendarRouteImport } from './routes/calendar'
@@ -48,6 +51,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -56,6 +64,16 @@ const HomeRoute = HomeRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -96,8 +114,11 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/coach': typeof CoachRoute
   '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/friends': typeof FriendsRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
+  '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
@@ -111,8 +132,11 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/coach': typeof CoachRoute
   '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/friends': typeof FriendsRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
+  '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
@@ -127,8 +151,11 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/coach': typeof CoachRoute
   '/dashboard': typeof DashboardRoute
+  '/events': typeof EventsRoute
+  '/friends': typeof FriendsRoute
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
+  '/messages': typeof MessagesRoute
   '/onboarding': typeof OnboardingRoute
   '/plan': typeof PlanRoute
   '/profile': typeof ProfileRoute
@@ -144,8 +171,11 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/coach'
     | '/dashboard'
+    | '/events'
+    | '/friends'
     | '/history'
     | '/home'
+    | '/messages'
     | '/onboarding'
     | '/plan'
     | '/profile'
@@ -159,8 +189,11 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/coach'
     | '/dashboard'
+    | '/events'
+    | '/friends'
     | '/history'
     | '/home'
+    | '/messages'
     | '/onboarding'
     | '/plan'
     | '/profile'
@@ -174,8 +207,11 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/coach'
     | '/dashboard'
+    | '/events'
+    | '/friends'
     | '/history'
     | '/home'
+    | '/messages'
     | '/onboarding'
     | '/plan'
     | '/profile'
@@ -190,8 +226,11 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   CoachRoute: typeof CoachRoute
   DashboardRoute: typeof DashboardRoute
+  EventsRoute: typeof EventsRoute
+  FriendsRoute: typeof FriendsRoute
   HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
+  MessagesRoute: typeof MessagesRoute
   OnboardingRoute: typeof OnboardingRoute
   PlanRoute: typeof PlanRoute
   ProfileRoute: typeof ProfileRoute
@@ -236,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -248,6 +294,20 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -302,8 +362,11 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   CoachRoute: CoachRoute,
   DashboardRoute: DashboardRoute,
+  EventsRoute: EventsRoute,
+  FriendsRoute: FriendsRoute,
   HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
+  MessagesRoute: MessagesRoute,
   OnboardingRoute: OnboardingRoute,
   PlanRoute: PlanRoute,
   ProfileRoute: ProfileRoute,
@@ -313,3 +376,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
