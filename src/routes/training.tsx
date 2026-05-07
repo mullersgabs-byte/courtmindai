@@ -1,456 +1,260 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useT } from "@/lib/i18n";
-import { getProfile } from "@/lib/profile";
-import { TabBar } from "@/components/TabBar";
-import { analyzeFromFrames } from "@/server/analyze.functions";
-import {
-  exercisesForSport,
-  recommendedProgram,
-  enroll,
-  getEnrollment,
-  type Exercise,
-  type Program,
-} from "@/lib/programs";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, Pause, Play, Square, Camera, Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/training")({
-  head: () => ({ meta: [{ title: "Training — CourtMind" }] }),
+  head: () => ({ meta: [{ title: "Record — Traino" }] }),
   component: TrainingPage,
 });
 
-type Phase = "intro" | "permission" | "ready" | "recording" | "analyzing" | "result" | "error";
-type Result = {
-  overallScore: number;
-  verdict: string;
-  positives: string[];
-  mistakes: string[];
-  improvements: string[];
-  steps: string[];
-};
+type Phase = "intro" | "permission" | "ready" | "recording" | "paused" | "done";
 
-type PermState = "unknown" | "prompt" | "granted" | "denied";
+function fmt(s: number) {
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const r = (s % 60).toString().padStart(2, "0");
+  return `${m}:${r}`;
+}
 
 function TrainingPage() {
-  const { t, lang } = useT();
-  const profile = useMemo(() => getProfile(), []);
-  const sport = profile.sport || "tennis";
-  const exercises = useMemo<Exercise[]>(() => exercisesForSport(sport), [sport]);
-  const program = useMemo<Program | undefined>(() => recommendedProgram(sport), [sport]);
-  const [enrollment, setEnrollment] = useState(() => getEnrollment());
-
-  const [phase, setPhase] = useState<Phase>("intro");
-  const [permission, setPermission] = useState<PermState>("unknown");
-  const [activeExercise, setActiveExercise] = useState<Exercise>(exercises[0]);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string>("");
-  const [result, setResult] = useState<Result | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [seconds, setSeconds] = useState(0);
+  const [reps, setReps] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const recRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
 
-  // probe permissions on mount
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const status = await (navigator.permissions as any)?.query?.({ name: "camera" });
-        if (!cancelled && status) {
-          setPermission(status.state as PermState);
-          status.onchange = () => setPermission(status.state as PermState);
-        }
-      } catch {
-        /* ignore — we will ask on use */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    if (phase !== "recording") return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
 
-  useEffect(() => () => {
-    streamRef.current?.getTracks().forEach((tr) => tr.stop());
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-  }, [previewUrl]);
+  useEffect(() => () => { streamRef.current?.getTracks().forEach((t) => t.stop()); }, []);
 
-  const askPermission = async () => {
-    setError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-      // we only wanted permission — release immediately
-      stream.getTracks().forEach((tr) => tr.stop());
-      setPermission("granted");
-      setPhase("ready");
-    } catch {
-      setPermission("denied");
-    }
-  };
-
-  const goToReady = async () => {
-    if (permission === "granted") { setPhase("ready"); return; }
-    setPhase("permission");
-  };
-
-  const startRecording = async () => {
-    setError(""); setResult(null);
+  const requestCamera = async () => {
+    setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
       streamRef.current = stream;
-      setPermission("granted");
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      chunksRef.current = [];
-      const rec = new MediaRecorder(stream, { mimeType: "video/webm" });
-      rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      rec.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-        streamRef.current?.getTracks().forEach((tr) => tr.stop());
-        if (videoRef.current) videoRef.current.srcObject = null;
-        await analyze(url);
-      };
-      recRef.current = rec;
-      rec.start();
-      setPhase("recording");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Camera unavailable.");
-      setPermission("denied");
-      setPhase("error");
+      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
+      setPhase("ready");
+    } catch {
+      setError("Camera access was denied. Allow camera in your browser to record.");
     }
   };
 
-  const stopRecording = () => {
-    if (recRef.current && recRef.current.state !== "inactive") {
-      setPhase("analyzing");
-      recRef.current.stop();
-    }
+  const stop = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    setPhase("done");
   };
 
-  const analyze = async (url: string) => {
-    try {
-      setProgress(0);
-      const { frames, durationSeconds } = await extractFrames(url, 6, setProgress);
-      const res = await analyzeFromFrames({
-        data: {
-          frames, durationSeconds,
-          sport, level: profile.level || "intermediate",
-          language: lang,
-          notes: t(activeExercise.nameKey),
-        },
-      } as any);
-      if (res.status !== "done") throw new Error(res.error || "Analysis failed.");
-      try {
-        const list = JSON.parse(localStorage.getItem("courtmind.history.v1") || "[]");
-        list.unshift({
-          id: crypto.randomUUID(),
-          date: new Date().toISOString(),
-          title: t(activeExercise.nameKey),
-          sport,
-          durationMinutes: Math.max(1, Math.round(durationSeconds / 60)),
-        });
-        localStorage.setItem("courtmind.history.v1", JSON.stringify(list));
-      } catch {}
-      setResult({
-        overallScore: res.overallScore,
-        verdict: res.verdict,
-        positives: res.positives,
-        mistakes: res.mistakes,
-        improvements: res.improvements,
-        steps: res.steps,
-      });
-      setPhase("result");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not analyze.");
-      setPhase("error");
-    }
-  };
+  if (phase === "intro") {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <Header onBack={() => navigate({ to: "/home" })} />
+        <main className="mx-auto max-w-[440px] px-6 pt-10">
+          <p className="text-[12px] uppercase tracking-[0.24em] text-white/45">Record workout</p>
+          <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.02em]">Frame yourself, then start.</h1>
+          <p className="mt-3 text-[14px] text-white/55">Traino analyzes posture, balance and execution in real time. Nothing leaves your device until you save.</p>
 
-  const reset = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(""); setResult(null); setError("");
-    setPhase(permission === "granted" ? "ready" : "intro");
-  };
+          <ul className="mt-8 space-y-3 text-[14px]">
+            {["Place your phone vertically", "Step back so your full body is visible", "Good lighting helps detection"].map((s, i) => (
+              <li key={i} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[11px] font-medium">{i + 1}</span>
+                <span className="text-white/80">{s}</span>
+              </li>
+            ))}
+          </ul>
 
-  const onEnroll = () => {
-    if (!program) return;
-    setEnrollment(enroll(program.id));
-  };
-
-  const sportLabel = t(`sport.${sport.toLowerCase?.() || sport}`) || sport;
-
-  return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
-      <header className="px-5 pt-12 pb-4">
-        <h1 className="text-[28px] font-semibold tracking-[-0.02em]">{t("training.title")}</h1>
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          {t("training.exercises.for").replace("{sport}", sportLabel)}
-        </p>
-      </header>
-
-      <main className="mx-auto max-w-[480px] px-5 space-y-6">
-        {phase === "intro" && (
-          <>
-            {/* Suggested program card */}
-            {program && (
-              <ProgramCard
-                program={program}
-                enrolled={enrollment?.programId === program.id}
-                onEnroll={onEnroll}
-                t={t}
-              />
-            )}
-
-            <ExerciseList
-              title={t("training.exercises.today")}
-              exercises={exercises}
-              active={activeExercise}
-              onPick={setActiveExercise}
-              t={t}
-            />
-
-            <button onClick={goToReady}
-              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.start_session")}
-            </button>
-          </>
-        )}
-
-        {phase === "permission" && (
-          <section className="rounded-3xl border bg-card p-6">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.permission.title")}</p>
-            <p className="mt-3 text-[15px] leading-relaxed">{t("training.permission.body")}</p>
-            <button onClick={askPermission}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.permission.allow")}
-            </button>
-            {permission === "denied" && (
-              <p className="mt-3 text-[13px] text-destructive">{t("training.permission.denied")}</p>
-            )}
-          </section>
-        )}
-
-        {phase === "ready" && (
-          <>
-            <section className="rounded-3xl border bg-card p-5">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.exercises.today")}</p>
-              <p className="mt-3 text-[20px] font-semibold">{t(activeExercise.nameKey)}</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">{t(activeExercise.cueKey)}</p>
-              <p className="mt-3 text-[12px] text-muted-foreground">
-                {t("training.seconds").replace("{n}", String(activeExercise.seconds))}
-              </p>
-            </section>
-
-            <p className="text-center text-[13px] text-muted-foreground">{t("training.tip")}</p>
-
-            <button onClick={startRecording}
-              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.record")}
-            </button>
-          </>
-        )}
-
-        {phase === "recording" && (
-          <>
-            <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
-              <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
-            </div>
-            <div className="flex items-center justify-center gap-2 text-[13px] text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-              {t("training.recording")}
-            </div>
-            <button onClick={stopRecording}
-              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("training.stop")}
-            </button>
-          </>
-        )}
-
-        {phase === "analyzing" && (
-          <div className="rounded-3xl border bg-card p-8 text-center">
-            <p className="text-[13px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.analyzing")}</p>
-            <div className="mx-auto mt-6 h-1 w-full max-w-[240px] overflow-hidden rounded-full bg-foreground/10">
-              <div className="h-full bg-foreground transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
-            </div>
-          </div>
-        )}
-
-        {phase === "result" && result && (
-          <>
-            {previewUrl && (
-              <div className="overflow-hidden rounded-3xl border bg-black aspect-[3/4]">
-                <video src={previewUrl} controls playsInline className="h-full w-full object-cover" />
-              </div>
-            )}
-            <section className="rounded-3xl border bg-card p-6 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("training.score")}</p>
-              <p className="mt-2 text-[56px] font-semibold leading-none tracking-[-0.03em]">{Math.round(result.overallScore)}</p>
-              <p className="mt-3 text-[14px] text-muted-foreground">{result.verdict}</p>
-            </section>
-            {result.positives.length > 0 && <FeedbackList title={t("training.feedback.positives")} items={result.positives} />}
-            {result.mistakes.length > 0 && <FeedbackList title={t("training.feedback.fix")} items={result.mistakes} />}
-            {result.steps.length > 0 && <FeedbackList title={t("training.feedback.steps")} items={result.steps} />}
-
-            {/* Suggested program after analysis */}
-            {program && (
-              <ProgramCard
-                program={program}
-                enrolled={enrollment?.programId === program.id}
-                onEnroll={onEnroll}
-                t={t}
-                heading={t("training.program.suggested")}
-              />
-            )}
-
-            <button onClick={reset}
-              className="inline-flex w-full items-center justify-center rounded-full border bg-card px-6 py-3.5 text-[15px] font-medium hover:bg-foreground/5">
-              {t("training.try_again")}
-            </button>
-          </>
-        )}
-
-        {phase === "error" && (
-          <>
-            <div className="rounded-3xl border border-destructive/40 bg-destructive/10 p-6 text-[14px] text-destructive">{error}</div>
-            <button onClick={reset}
-              className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-[15px] font-medium text-background hover:opacity-90">
-              {t("common.reset")}
-            </button>
-          </>
-        )}
-      </main>
-
-      <TabBar />
-    </div>
-  );
-}
-
-function ProgramCard({
-  program, enrolled, onEnroll, t, heading,
-}: {
-  program: Program;
-  enrolled: boolean;
-  onEnroll: () => void;
-  t: (k: string) => string;
-  heading?: string;
-}) {
-  return (
-    <section className="rounded-3xl border bg-card p-5">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-        {heading || t("training.program.suggested")}
-      </p>
-      <h2 className="mt-3 text-[20px] font-semibold leading-tight">{t(program.titleKey)}</h2>
-      <p className="mt-1 text-[13px] text-muted-foreground">{t(program.descriptionKey)}</p>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <Mini label={t("program.weeks_label")} value={String(program.weeks)} />
-        <Mini label={t("program.sessions_label")} value={String(program.sessionsPerWeek)} />
-        <Mini label={t("program.level_label")} value={t("program.level.all")} />
+          <button
+            onClick={() => setPhase("permission")}
+            className="mt-10 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-4 text-[15px] font-semibold text-black"
+          >
+            <Camera size={16} /> Continue
+          </button>
+        </main>
       </div>
-      <button onClick={onEnroll} disabled={enrolled}
-        className={`mt-5 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-[14px] font-medium transition ${
-          enrolled ? "border bg-card text-muted-foreground" : "bg-foreground text-background hover:opacity-90"
-        }`}>
-        {enrolled ? t("training.program.enrolled") : t("training.program.enroll")}
-      </button>
-    </section>
-  );
-}
+    );
+  }
 
-function Mini({ label, value }: { label: string; value: string }) {
+  if (phase === "permission") {
+    return (
+      <div className="grid min-h-screen place-items-center bg-black px-6 text-white">
+        <div className="w-full max-w-[400px] text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-white/15 bg-white/[0.04]">
+            <Camera size={22} />
+          </div>
+          <h1 className="mt-6 text-[22px] font-semibold tracking-tight">Allow camera access</h1>
+          <p className="mt-2 text-[14px] text-white/55">Required to analyze your movement in real time.</p>
+          {error && <p className="mt-4 text-[13px] text-white/70">{error}</p>}
+          <button onClick={requestCamera} className="mt-8 w-full rounded-full bg-white px-6 py-3.5 text-[14px] font-semibold text-black">Enable camera</button>
+          <button onClick={() => navigate({ to: "/home" })} className="mt-3 w-full rounded-full border border-white/10 px-6 py-3.5 text-[14px] text-white/70">Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "done") {
+    return <PostWorkout seconds={seconds} reps={reps} onBack={() => navigate({ to: "/home" })} />;
+  }
+
+  // ready / recording / paused — camera UI
+  const recording = phase === "recording";
   return (
-    <div className="rounded-2xl border bg-background p-3">
-      <p className="text-[15px] font-semibold">{value}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 h-full w-full object-cover opacity-90" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/15 to-black/85" />
+
+      {/* Top */}
+      <div className="relative z-10 flex items-center justify-between px-5 pt-12">
+        <button onClick={stop} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full bg-black/60 backdrop-blur-md">
+          <ChevronLeft size={16} />
+        </button>
+        <div className="rounded-full border border-white/15 bg-black/55 px-3 py-1.5 backdrop-blur-md">
+          <p className="flex items-center gap-2 text-[12px] font-medium tracking-wide">
+            <span className={`h-2 w-2 rounded-full ${recording ? "bg-white animate-pulse" : "bg-white/40"}`} />
+            {recording ? "Recording" : phase === "paused" ? "Paused" : "Ready"}
+          </p>
+        </div>
+        <div className="w-9" />
+      </div>
+
+      {/* Title */}
+      <div className="relative z-10 mx-auto mt-6 max-w-[440px] px-5 text-center">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-white/65">Squat session</p>
+        <h2 className="mt-1 text-[20px] font-semibold tracking-tight">Hold form. Breathe.</h2>
+      </div>
+
+      {/* Bottom controls */}
+      <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-10">
+        <div className="mx-auto max-w-[440px] rounded-3xl border border-white/10 bg-black/60 p-5 backdrop-blur-2xl">
+          <div className="flex items-center justify-between">
+            <Metric label="Time" value={fmt(seconds)} />
+            <Metric label="Reps" value={String(reps)} />
+            <button onClick={() => setReps((r) => r + 1)} className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06]" aria-label="Add rep">
+              <Repeat size={15} />
+            </button>
+          </div>
+
+          <div className="mt-5 flex items-center justify-center gap-4">
+            <button onClick={stop} className="grid h-12 w-12 place-items-center rounded-full border border-white/15 bg-white/[0.06]" aria-label="Stop">
+              <Square size={16} />
+            </button>
+            {recording ? (
+              <button onClick={() => setPhase("paused")} className="grid h-16 w-16 place-items-center rounded-full bg-white text-black" aria-label="Pause">
+                <Pause size={22} />
+              </button>
+            ) : (
+              <button onClick={() => setPhase("recording")} className="grid h-16 w-16 place-items-center rounded-full bg-white text-black" aria-label="Start">
+                <Play size={22} />
+              </button>
+            )}
+            <div className="h-12 w-12" />
+          </div>
+
+          {recording && (
+            <p className="mt-4 text-center text-[12px] text-white/65">AI: knees stable, chest upright. Maintain depth.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function ExerciseList({
-  title, exercises, active, onPick, t,
-}: {
-  title: string;
-  exercises: Exercise[];
-  active: Exercise;
-  onPick: (e: Exercise) => void;
-  t: (k: string) => string;
-}) {
+function Header({ onBack }: { onBack: () => void }) {
   return (
-    <section>
-      <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-      <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
-        {exercises.map((ex) => {
-          const isActive = ex.id === active.id;
-          return (
-            <li key={ex.id}>
-              <button onClick={() => onPick(ex)}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-foreground/5 ${
-                  isActive ? "bg-foreground/5" : ""
-                }`}>
-                <div>
-                  <p className={`text-[15px] ${isActive ? "font-semibold" : "font-medium"}`}>{t(ex.nameKey)}</p>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">{t(ex.cueKey)}</p>
-                </div>
-                <span className="text-[12px] text-muted-foreground">
-                  {t("training.seconds").replace("{n}", String(ex.seconds))}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+    <div className="sticky top-0 z-30 bg-black/85 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-[440px] items-center justify-between px-5 py-4">
+        <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04]"><ChevronLeft size={16} /></button>
+        <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">Session</p>
+        <div className="w-9" />
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="font-mono text-[24px] font-semibold tracking-tight">{value}</p>
+      <p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-white/45">{label}</p>
+    </div>
+  );
+}
+
+function PostWorkout({ seconds, reps, onBack }: { seconds: number; reps: number; onBack: () => void }) {
+  const overall = 87;
+  const posture = 91;
+  const balance = 84;
+  const execution = 86;
+  return (
+    <div className="min-h-screen bg-black text-white pb-20">
+      <Header onBack={onBack} />
+      <main className="mx-auto max-w-[440px] px-5 pt-8">
+        <p className="text-[12px] uppercase tracking-[0.24em] text-white/45">Analysis complete</p>
+        <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.02em]">Session summary</h1>
+        <p className="mt-2 text-[14px] text-white/55">{fmt(seconds)} · {reps} reps</p>
+
+        <div className="mt-7 rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">Overall score</p>
+          <p className="mt-3 text-[64px] font-semibold leading-none tracking-tight">{overall}</p>
+          <p className="mt-2 text-[12px] text-white/55">+6% vs. last session</p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
+          <Score k="Posture" v={posture} />
+          <Score k="Balance" v={balance} />
+          <Score k="Execution" v={execution} />
+        </div>
+
+        <Section title="Mistakes">
+          <Bullet>Knees collapse inward during the second half of the set.</Bullet>
+          <Bullet>Shoulders lean too far forward at the bottom of the squat.</Bullet>
+        </Section>
+
+        <Section title="Strengths">
+          <Bullet>Posture improves consistently after rep 4.</Bullet>
+          <Bullet>Tempo stays controlled across all sets.</Bullet>
+        </Section>
+
+        <Section title="Recommendations">
+          <Bullet>Add 2 sets of banded squats to reinforce knee tracking.</Bullet>
+          <Bullet>Mobilize the thoracic spine before your next session.</Bullet>
+        </Section>
+
+        <button onClick={onBack} className="mt-8 w-full rounded-full bg-white px-6 py-4 text-[15px] font-semibold text-black">Back to feed</button>
+      </main>
+    </div>
+  );
+}
+
+function Score({ k, v }: { k: string; v: number }) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-center">
+      <p className="text-[24px] font-semibold tracking-tight">{v}</p>
+      <div className="mx-auto mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-full bg-white" style={{ width: `${v}%` }} />
+      </div>
+      <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/45">{k}</p>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-6">
+      <p className="px-1 text-[11px] uppercase tracking-[0.22em] text-white/45">{title}</p>
+      <ul className="mt-2 space-y-1.5">{children}</ul>
     </section>
   );
 }
 
-function FeedbackList({ title, items }: { title: string; items: string[] }) {
+function Bullet({ children }: { children: React.ReactNode }) {
   return (
-    <section>
-      <p className="px-1 pb-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-      <ul className="overflow-hidden rounded-2xl border bg-card divide-y">
-        {items.map((it, i) => <li key={i} className="px-4 py-3 text-[14px]">{it}</li>)}
-      </ul>
-    </section>
+    <li className="flex gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-[13.5px] leading-relaxed text-white/85">
+      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-white/55" />
+      <span>{children}</span>
+    </li>
   );
-}
-
-/* ---------- frame extraction ---------- */
-async function extractFrames(src: string, count: number, onProgress: (p: number) => void): Promise<{ frames: string[]; durationSeconds: number }> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.src = src; video.muted = true; video.playsInline = true; video.preload = "auto";
-    video.addEventListener("error", () => reject(new Error("Could not read video.")));
-    video.addEventListener("loadedmetadata", async () => {
-      const duration = isFinite(video.duration) ? video.duration : 0;
-      if (!duration || duration < 0.2) return reject(new Error("Video too short."));
-      const w = video.videoWidth || 640, h = video.videoHeight || 360;
-      const scale = Math.min(1, 720 / w);
-      const cw = Math.round(w * scale), ch = Math.round(h * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = cw; canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Canvas unavailable."));
-      const frames: string[] = [];
-      const targets: number[] = [];
-      for (let i = 0; i < count; i++) {
-        const pct = 0.05 + (i / Math.max(1, count - 1)) * 0.9;
-        targets.push(Math.min(duration - 0.05, pct * duration));
-      }
-      const seekTo = (time: number) => new Promise<void>((res) => {
-        const onSeeked = () => { video.removeEventListener("seeked", onSeeked); res(); };
-        video.addEventListener("seeked", onSeeked);
-        video.currentTime = time;
-      });
-      try {
-        for (let i = 0; i < targets.length; i++) {
-          await seekTo(targets[i]);
-          ctx.drawImage(video, 0, 0, cw, ch);
-          frames.push(canvas.toDataURL("image/jpeg", 0.78));
-          onProgress((i + 1) / targets.length);
-        }
-        resolve({ frames, durationSeconds: duration });
-      } catch (err) { reject(err); }
-    });
-  });
 }
