@@ -146,6 +146,12 @@ function OnboardingPage() {
           </form>
         </div>
       </div>
+      <style>{`
+        @keyframes trainoDot {
+          0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+          40% { opacity: 1; transform: translateY(-2px); }
+        }
+      `}</style>
     </div>
   );
 }
